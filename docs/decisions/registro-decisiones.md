@@ -12,7 +12,7 @@
 
 ## ADR-002 - Firebase como backend inicial
 
-- Estado: Propuesta.
+- Estado: Aprobada.
 - Fecha: 2026-06-16.
 - Decision: Usar Firebase Auth, Firestore, Storage y FCM en la primera version.
 - Motivo: Acelera autenticacion, datos en tiempo real, notificaciones y
@@ -22,10 +22,9 @@
 
 ## ADR-003 - Expo como punto de arranque
 
-- Estado: Propuesta.
+- Estado: Aprobada.
 - Fecha: 2026-06-16.
 - Decision: Iniciar con Expo para acelerar desarrollo y pruebas en dispositivos.
 - Motivo: Reduce friccion inicial y permite validar rapido el vertical slice.
 - Consecuencia: Si aparece una dependencia nativa no soportada, se evaluara
   migrar o usar desarrollo nativo gestionado.
-
