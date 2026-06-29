@@ -113,3 +113,62 @@ Cada sesion de trabajo debe registrar:
 - Evidencia: `sdkVersion` efectivo `53.0.0` y dependencias
   `expo@53.0.27`, `react-native@0.79.7`, `react@19.0.0`.
 - Pendientes: Probar en Expo Go con cache limpia.
+
+### 2026-06-17 - Correccion de compatibilidad Expo Go 54
+
+- Responsable: Equipo TapFade.
+- Modulo: Fundaciones tecnicas.
+- Actividades: Re-alineacion del proyecto a Expo SDK 54, cierre de procesos
+  Metro/Expo antiguos y movimiento de `AppShell` fuera de `src/app` para evitar
+  deteccion accidental de Expo Router.
+- Decisiones: Mantener SDK 54 porque el dispositivo usa Expo Go 54.
+- Pruebas ejecutadas: `npm run typecheck`, `npm ls expo react react-native`
+  y `npx expo config --json`.
+- Evidencia: `sdkVersion` efectivo `54.0.0`; dependencias
+  `expo@54.0.35`, `react-native@0.81.5`, `react@19.1.4`.
+- Pendientes: Probar en Expo Go usando solo el comando desde `/mobile`.
+
+### 2026-06-17 - Login alineado a mockup y assets renombrados
+
+- Responsable: Equipo TapFade.
+- Modulo: Auth / UI inicial.
+- Actividades: Ajuste del login para seguir la referencia visual proporcionada:
+  fondo blanco, logo real, formulario compacto, separador, botones sociales,
+  registro y recursos laterales de marca.
+- Decisiones: Usar assets reales desde `/mobile/assets` y renombrarlos con
+  nombres semanticos.
+- Pruebas ejecutadas: `npm run typecheck`.
+- Evidencia: `/mobile/src/shell/AppShell.tsx` y assets `logo-*` / `brand-*`.
+- Pendientes: Revision visual en dispositivo y conexion con Firebase Auth.
+
+### 2026-06-29 - Pruebas unitarias iniciales en CI
+
+- Responsable: Equipo TapFade.
+- Modulo: DevOps / UI compartida.
+- Actividades: Configuracion de Jest con `jest-expo`, React Native Testing
+  Library y pruebas unitarias iniciales para `PrimaryButton` e `InputField`.
+- Decisiones: Mantener el pipeline en GitHub Actions como puerta de validacion
+  para typecheck y pruebas unitarias antes de integrar cambios.
+- Pruebas ejecutadas: `npm run typecheck` y `npm run test:ci`.
+- Evidencia: `.github/workflows/mobile-ci.yml`,
+  `/mobile/src/shared/components/__tests__/PrimaryButton-test.tsx` y
+  `/mobile/src/shared/components/__tests__/InputField-test.tsx`.
+- Pendientes: Agregar pruebas por modulo conforme se implementen reglas de
+  negocio, servicios y conexion con Firebase.
+
+### 2026-06-29 - Calidad base del pipeline
+
+- Responsable: Equipo TapFade.
+- Modulo: DevOps.
+- Actividades: Configuracion de ESLint con `eslint-config-expo`, integracion
+  de `npm run lint` al workflow `Mobile CI` y creacion de checklist de pull
+  request.
+- Decisiones: Usar la configuracion oficial de Expo sin reglas personalizadas
+  y mantener Prettier fuera de esta iteracion para evitar cambios masivos de
+  formato.
+- Pruebas ejecutadas: `npm ci`, `npm run lint`, `npm run typecheck` y
+  `npm run test:ci`.
+- Evidencia: `.github/workflows/mobile-ci.yml`,
+  `.github/pull_request_template.md` y `/mobile/eslint.config.js`.
+- Pendientes: Revisar vulnerabilidades moderadas de dependencias antes de una
+  version distribuible y evaluar Prettier en una iteracion separada.
