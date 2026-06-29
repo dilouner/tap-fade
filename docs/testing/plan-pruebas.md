@@ -22,6 +22,49 @@ de avanzar al siguiente.
 - Evidencia anexada en bitacora o reporte.
 - Requerimientos trazados.
 
+## Herramientas actuales
+
+- TypeScript: validacion estatica con `npm run typecheck` en `/mobile`.
+- ESLint + eslint-config-expo: validacion estatica de calidad con
+  `npm run lint` en `/mobile`.
+- Jest + jest-expo: ejecucion de pruebas unitarias en el proyecto Expo.
+- React Native Testing Library: pruebas de comportamiento de componentes.
+- GitHub Actions: pipeline `Mobile CI` en `.github/workflows/mobile-ci.yml`.
+
+## Comandos de validacion
+
+Ejecutar desde `/mobile`:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:ci
+```
+
+Para desarrollo local con Jest en modo observacion:
+
+```bash
+npm run test:watch
+```
+
+## Cobertura actual
+
+| Area | Tipo | Estado | Evidencia |
+|---|---|---|---|
+| UI compartida | Unitarias | Configurado | `PrimaryButton-test.tsx`, `InputField-test.tsx` |
+| Pipeline CI | Lint + typecheck + unitarias | Configurado | `.github/workflows/mobile-ci.yml` |
+
+## Reglas para nuevas pruebas
+
+- Cada modulo nuevo debe agregar pruebas unitarias para reglas, validaciones o
+  componentes reutilizables.
+- Las pruebas de integracion se agregaran cuando el modulo tenga servicios,
+  repositorios o acceso a Firebase.
+- Todo pull request debe reportar los comandos ejecutados y su resultado.
+- Todo pull request que afecte `/mobile` debe pasar lint, typecheck y pruebas
+  unitarias antes de integrarse.
+- Si una prueba genera cobertura, el directorio `coverage/` no debe versionarse.
+
 ## Casos base del FRU
 
 | ID | Escenario |
@@ -38,4 +81,3 @@ de avanzar al siguiente.
 | CP-010 | Recordatorios automaticos |
 | CP-011 | Consultar historial de citas |
 | CP-012 | Generar reporte de ocupacion |
-
