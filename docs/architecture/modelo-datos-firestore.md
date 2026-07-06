@@ -20,9 +20,19 @@ reports/{reportId}
 - `displayName`
 - `email`
 - `phone`
+- `photoURL`
 - `role`: `client | barber | owner | admin`
 - `createdAt`
 - `updatedAt`
+
+### Contrato inicial de Auth + Roles
+
+- El documento se crea en `users/{uid}` usando el `uid` de Firebase Auth.
+- El primer inicio con Google crea el perfil con `role: client`.
+- Inicios posteriores conservan el rol existente y actualizan datos basicos de
+  Google como `displayName`, `email`, `phone` y `photoURL`.
+- El rol solo debe cambiarse por flujos administrativos futuros, no por el
+  login del cliente.
 
 ## barberShops
 
@@ -78,4 +88,3 @@ reports/{reportId}
 - Citas completadas o canceladas no se editan.
 - Cancelacion o reagendado por cliente solo aplica con al menos 1 hora de
   anticipacion.
-

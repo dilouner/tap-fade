@@ -52,6 +52,7 @@ npm run test:watch
 | Area | Tipo | Estado | Evidencia |
 |---|---|---|---|
 | UI compartida | Unitarias | Configurado | `PrimaryButton-test.tsx`, `InputField-test.tsx` |
+| Auth + roles | Unitarias + integracion mockeada | Configurado | `authSession-test.ts`, `userProfile-test.ts`, `userProfileRepository-test.ts`, `AppShell-test.tsx` |
 | Pipeline CI | Lint + typecheck + unitarias | Configurado | `.github/workflows/mobile-ci.yml` |
 
 ## Reglas para nuevas pruebas
@@ -64,12 +65,14 @@ npm run test:watch
 - Todo pull request que afecte `/mobile` debe pasar lint, typecheck y pruebas
   unitarias antes de integrarse.
 - Si una prueba genera cobertura, el directorio `coverage/` no debe versionarse.
+- Las pruebas de Auth en CI usan mocks de Firebase/Google; la validacion real
+  de Google Sign-In se ejecuta manualmente en development build.
 
 ## Casos base del FRU
 
 | ID | Escenario |
 |---|---|
-| CP-001 | Registro con Google, Apple y correo |
+| CP-001 | Registro e inicio de sesion con Google |
 | CP-002 | Intento de acceso sin autenticacion |
 | CP-003 | Registro de barberia |
 | CP-004 | Configurar horarios disponibles |

@@ -172,3 +172,20 @@ Cada sesion de trabajo debe registrar:
   `.github/pull_request_template.md` y `/mobile/eslint.config.js`.
 - Pendientes: Revisar vulnerabilidades moderadas de dependencias antes de una
   version distribuible y evaluar Prettier en una iteracion separada.
+
+### 2026-07-06 - Auth + Roles con Google Sign-In
+
+- Responsable: Equipo TapFade.
+- Modulo: Auth / Users.
+- Actividades: Configuracion inicial de Firebase, Google Sign-In para
+  development build, estado de sesion y creacion/lectura de perfiles
+  `users/{uid}` con rol inicial `client`.
+- Decisiones: Mantener Google como unico proveedor real de autenticacion; Apple
+  y correo/password quedan fuera del alcance funcional actual.
+- Pruebas ejecutadas: `npm ci`, `npm run lint`, `npm run typecheck` y
+  `npm run test:ci`.
+- Evidencia: `/mobile/src/modules/auth`, `/mobile/src/modules/users`,
+  `/mobile/src/shared/firebase` y pruebas unitarias/integracion mockeada.
+- Pendientes: Crear proyecto Firebase real, completar variables
+  `EXPO_PUBLIC_*`, generar development build y validar login en dispositivo.
+  `npm audit` reporta 16 vulnerabilidades moderadas en dependencias.
