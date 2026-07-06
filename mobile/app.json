@@ -7,9 +7,11 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
+      "bundleIdentifier": "com.tapfade.mobile",
       "supportsTablet": true
     },
     "android": {
+      "package": "com.tapfade.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#11151C",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +22,9 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "@react-native-google-signin/google-signin"
+    ]
   }
 }

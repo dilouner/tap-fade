@@ -3,18 +3,28 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, spacing, typography } from '../theme';
 
 type SocialButtonProps = {
+  disabled?: boolean;
   icon: string;
   label: string;
+  loading?: boolean;
   onPress?: () => void;
 };
 
-export function SocialButton({ icon, label, onPress }: SocialButtonProps) {
+export function SocialButton({ disabled, icon, label, loading, onPress }: SocialButtonProps) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+    <Pressable
+      disabled={disabled || loading}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && !disabled && !loading && styles.pressed,
+        (disabled || loading) && styles.disabled,
+      ]}
+    >
       <View style={styles.iconWrap}>
         <Text style={styles.iconText}>{icon}</Text>
       </View>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>{loading ? 'Conectando...' : label}</Text>
     </Pressable>
   );
 }
@@ -38,6 +48,9 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.88,
+  },
+  disabled: {
+    opacity: 0.58,
   },
   iconWrap: {
     alignItems: 'center',

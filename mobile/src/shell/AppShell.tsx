@@ -11,6 +11,8 @@ import {
   View,
 } from 'react-native';
 
+import type { AuthSessionStatus } from '../modules/auth/types';
+import type { UserProfile } from '../modules/users/types';
 import { InputField } from '../shared/components/InputField';
 import { PrimaryButton } from '../shared/components/PrimaryButton';
 import { SocialButton } from '../shared/components/SocialButton';
@@ -19,10 +21,26 @@ import { colors, spacing, typography } from '../shared/theme';
 const tapFadeLogo = require('../../assets/logo-primary-stacked-color-trimmed.png');
 const steppedPattern = require('../../assets/brand-pattern-stepped-light.png');
 
-export function AppShell() {
+type AppShellProps = {
+  authError?: string | null;
+  authStatus?: AuthSessionStatus;
+  onGooglePress?: () => void;
+  onSignOutPress?: () => void;
+  profile?: UserProfile | null;
+};
+
+export function AppShell({
+  authError,
+  authStatus = 'signedOut',
+  onGooglePress,
+  onSignOutPress,
+  profile,
+}: AppShellProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const isAuthLoading = authStatus === 'loading';
+  const isSignedIn = authStatus === 'signedIn';
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -51,11 +69,21 @@ export function AppShell() {
           </View>
 
           <View style={styles.headlineBlock}>
-            <Text style={styles.title}>Bienvenido de nuevo</Text>
-            <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
+            <Text style={styles.title}>{isSignedIn ? 'Sesion activa' : 'Bienvenido de nuevo'}</Text>
+            <Text style={styles.subtitle}>
+              {isSignedIn ? `Rol actual: ${profile?.role ?? 'client'}` : 'Inicia sesion para continuar'}
+            </Text>
           </View>
 
           <View style={styles.formBlock}>
+            {isSignedIn ? (
+              <View style={styles.sessionCard}>
+                <Text style={styles.sessionTitle}>{profile?.displayName || 'Usuario TapFade'}</Text>
+                <Text style={styles.sessionText}>{profile?.email || 'Cuenta Google conectada'}</Text>
+                <Text style={styles.sessionRole}>Perfil creado como cliente.</Text>
+              </View>
+            ) : null}
+
             <InputField
               autoCapitalize="none"
               autoComplete="email"
@@ -73,32 +101,44 @@ export function AppShell() {
               isSecureVisible={isPasswordVisible}
               onChangeText={setPassword}
               onTogglePress={() => setIsPasswordVisible((value) => !value)}
-              placeholder="Contraseña"
+              placeholder="Contrasena"
               secureTextEntry={!isPasswordVisible}
               showToggle
               value={password}
             />
 
-            <Text style={styles.forgot}>¿Olvidaste tu contraseña?</Text>
+            <Text style={styles.forgot}>Olvidaste tu contrasena?</Text>
 
             <PrimaryButton
-              disabled={!email || !password}
-              label="Iniciar sesión"
+              disabled={!email || !password || isSignedIn}
+              label="Iniciar sesion"
             />
 
             <View style={styles.separatorRow}>
               <View style={styles.separator} />
-              <Text style={styles.separatorText}>o continúa con</Text>
+              <Text style={styles.separatorText}>o continua con</Text>
               <View style={styles.separator} />
             </View>
 
+            {authError ? <Text style={styles.errorText}>{authError}</Text> : null}
+
             <View style={styles.socialRow}>
-              <SocialButton icon="G" label="Google" />
+              <SocialButton
+                disabled={isSignedIn}
+                icon="G"
+                label={isSignedIn ? 'Google conectado' : 'Google'}
+                loading={isAuthLoading}
+                onPress={onGooglePress}
+              />
             </View>
 
+            {isSignedIn ? (
+              <PrimaryButton label="Cerrar sesion" onPress={onSignOutPress} />
+            ) : null}
+
             <View style={styles.registerRow}>
-              <Text style={styles.registerText}>¿No tienes cuenta?</Text>
-              <Text style={styles.registerAction}> Regístrate</Text>
+              <Text style={styles.registerText}>No tienes cuenta?</Text>
+              <Text style={styles.registerAction}> Registrate con Google</Text>
             </View>
           </View>
 
@@ -241,6 +281,37 @@ const styles = StyleSheet.create({
   socialRow: {
     flexDirection: 'row',
     gap: spacing.md,
+  },
+  errorText: {
+    color: '#B42318',
+    fontFamily: typography.bodyBold,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  sessionCard: {
+    backgroundColor: colors.smoke,
+    borderColor: colors.coolGrey,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  sessionTitle: {
+    color: colors.graphite,
+    fontFamily: typography.bodyBlack,
+    fontSize: 16,
+  },
+  sessionText: {
+    color: colors.muted,
+    fontFamily: typography.body,
+    fontSize: 14,
+    marginTop: 4,
+  },
+  sessionRole: {
+    color: colors.blue,
+    fontFamily: typography.bodyBold,
+    fontSize: 13,
+    marginTop: spacing.sm,
   },
   registerRow: {
     flexDirection: 'row',
