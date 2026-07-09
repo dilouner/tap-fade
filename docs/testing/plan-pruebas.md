@@ -53,6 +53,7 @@ npm run test:watch
 |---|---|---|---|
 | UI compartida | Unitarias | Configurado | `PrimaryButton-test.tsx`, `InputField-test.tsx` |
 | Auth + roles | Unitarias + integracion mockeada | Configurado | `authSession-test.ts`, `userProfile-test.ts`, `userProfileRepository-test.ts`, `AppShell-test.tsx` |
+| Booking core | Unitarias + integracion mockeada | Configurado | `barberShop-test.ts`, `serviceCatalog-test.ts`, `availability-test.ts`, `appointmentRules-test.ts`, `appointmentRepository-test.ts`, `weeklyReport-test.ts` |
 | Pipeline CI | Lint + typecheck + unitarias | Configurado | `.github/workflows/mobile-ci.yml` |
 
 ## Reglas para nuevas pruebas

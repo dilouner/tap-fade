@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, type Firestore } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, type Firestore } from 'firebase/firestore';
 
 import { getFirebaseDb } from '../../shared/firebase/config';
 import { createClientProfile, mergeExistingProfile } from './userProfile';
@@ -39,4 +39,11 @@ export async function getOrCreateClientProfile(
   await setDoc(profileRef, updatedProfile, { merge: true });
 
   return updatedProfile;
+}
+
+export async function promoteUserToOwner(userId: string, db: Firestore = getFirebaseDb()): Promise<void> {
+  await updateDoc(doc(db, 'users', userId), {
+    role: 'owner',
+    updatedAt: new Date(),
+  });
 }
