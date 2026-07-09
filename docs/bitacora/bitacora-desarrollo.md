@@ -180,8 +180,8 @@ Cada sesion de trabajo debe registrar:
 - Actividades: Configuracion inicial de Firebase, Google Sign-In para
   development build, estado de sesion y creacion/lectura de perfiles
   `users/{uid}` con rol inicial `client`.
-- Decisiones: Mantener Google como unico proveedor real de autenticacion; Apple
-  y correo/password quedan fuera del alcance funcional actual.
+- Decisiones: Mantener Google como unico proveedor real de autenticacion;
+  Apple, iOS y correo/password quedan fuera del alcance funcional actual.
 - Pruebas ejecutadas: `npm ci`, `npm run lint`, `npm run typecheck` y
   `npm run test:ci`.
 - Evidencia: `/mobile/src/modules/auth`, `/mobile/src/modules/users`,
@@ -189,3 +189,19 @@ Cada sesion de trabajo debe registrar:
 - Pendientes: Crear proyecto Firebase real, completar variables
   `EXPO_PUBLIC_*`, generar development build y validar login en dispositivo.
   `npm audit` reporta 16 vulnerabilidades moderadas en dependencias.
+
+### 2026-07-09 - Configuracion Firebase real
+
+- Responsable: Equipo TapFade.
+- Modulo: Firebase / Auth / Users.
+- Actividades: Instalacion de Firebase CLI, creacion del proyecto
+  `tapfade-dev`, registro de apps Web y Android, configuracion local de
+  variables `EXPO_PUBLIC_*`, versionado/despliegue de reglas iniciales de
+  Firestore y registro de SHA-1/SHA-256 de debug para Android.
+- Decisiones: Mantener alcance Android-only; iOS no forma parte del producto
+  actual. Usar reglas de Firestore versionadas en lugar de dejar la base en
+  modo abierto de pruebas.
+- Pruebas ejecutadas: `npm run lint`, `npm run typecheck` y `npm run test:ci`.
+- Evidencia: `.firebaserc`, `firebase.json`, `firestore.rules`,
+  `/mobile/.env.example` y `docs/architecture/firebase-configuracion.md`.
+- Pendientes: Validar Google Sign-In en Android development build.

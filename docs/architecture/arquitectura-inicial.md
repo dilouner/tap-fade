@@ -14,6 +14,9 @@ La primera version se construira con:
 - Mapas: Google Maps API.
 - CI/CD: GitHub Actions.
 
+La configuracion operativa de Firebase se documenta en
+`docs/architecture/firebase-configuracion.md`.
+
 ## Vista general
 
 ```mermaid
