@@ -2,7 +2,6 @@ import { useState } from 'react';
 import {
   Image,
   KeyboardAvoidingView,
-  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -45,10 +44,7 @@ export function AppShell({
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboard}
-      >
+      <KeyboardAvoidingView style={styles.keyboard}>
         <View style={styles.sideRail}>
           <View style={styles.blueRail} />
           <View style={styles.blackRail} />
