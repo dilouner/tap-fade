@@ -3,7 +3,8 @@ import { Inter_400Regular, Inter_700Bold, Inter_800ExtraBold, Inter_900Black } f
 import { Sora_400Regular, Sora_700Bold, Sora_800ExtraBold } from '@expo-google-fonts/sora';
 import { ActivityIndicator, View } from 'react-native';
 
-import { AppShell } from './src/shell/AppShell';
+import { AuthGate } from './src/modules/auth/AuthGate';
+import { AuthProvider } from './src/modules/auth/AuthProvider';
 import { colors } from './src/shared/theme';
 
 export default function App() {
@@ -32,5 +33,9 @@ export default function App() {
     );
   }
 
-  return <AppShell />;
+  return (
+    <AuthProvider>
+      <AuthGate />
+    </AuthProvider>
+  );
 }

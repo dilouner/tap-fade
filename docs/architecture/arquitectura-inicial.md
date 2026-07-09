@@ -7,12 +7,15 @@ La primera version se construira con:
 - Frontend movil: React Native.
 - Opcion recomendada de arranque: Expo.
 - Backend: Firebase.
-- Autenticacion: Firebase Auth, Google Sign-In, Apple Sign-In y correo.
+- Autenticacion: Firebase Auth con Google Sign-In como proveedor inicial.
 - Base de datos: Cloud Firestore.
 - Archivos: Firebase Storage.
 - Notificaciones: Firebase Cloud Messaging.
 - Mapas: Google Maps API.
 - CI/CD: GitHub Actions.
+
+La configuracion operativa de Firebase se documenta en
+`docs/architecture/firebase-configuracion.md`.
 
 ## Vista general
 
@@ -50,6 +53,8 @@ flowchart LR
 - Centralizar acceso a Firebase.
 - Usar validaciones consistentes por modulo.
 - Mantener reglas de seguridad de Firestore alineadas a roles.
+- Mantener Google Sign-In como unico metodo de autenticacion hasta que se
+  apruebe otro proveedor.
 
 ## Riesgos a vigilar
 
@@ -58,4 +63,3 @@ flowchart LR
 - Baja adopcion por parte de barberias.
 - Rechazo en tiendas por privacidad o uso incorrecto de permisos.
 - Crecimiento de datos sin reglas claras de retencion.
-

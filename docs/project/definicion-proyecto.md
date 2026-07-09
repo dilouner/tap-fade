@@ -33,7 +33,7 @@ de barberias, barberos y clientes.
 
 Incluido:
 
-- App movil iOS y Android.
+- App movil Android.
 - Registro e inicio de sesion.
 - Roles y permisos.
 - Registro de barberias.
@@ -53,6 +53,7 @@ Fuera de alcance inicial:
 - Inventario.
 - Programa de lealtad.
 - Web o desktop.
+- iOS.
 - Soporte multi-pais o multi-moneda.
 
 ## Identidad de marca
@@ -77,4 +78,3 @@ Construir un vertical slice minimo:
 3. Cliente elige servicio, barbero y horario.
 4. Cliente crea una cita.
 5. Barbero ve la cita en su agenda.
-
