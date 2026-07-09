@@ -33,7 +33,7 @@ de barberias, barberos y clientes.
 
 Incluido:
 
-- App movil Android.
+- App movil iOS y Android.
 - Registro e inicio de sesion.
 - Roles y permisos.
 - Registro de barberias.
@@ -53,7 +53,6 @@ Fuera de alcance inicial:
 - Inventario.
 - Programa de lealtad.
 - Web o desktop.
-- iOS.
 - Soporte multi-pais o multi-moneda.
 
 ## Identidad de marca

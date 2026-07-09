@@ -181,7 +181,7 @@ Cada sesion de trabajo debe registrar:
   development build, estado de sesion y creacion/lectura de perfiles
   `users/{uid}` con rol inicial `client`.
 - Decisiones: Mantener Google como unico proveedor real de autenticacion;
-  Apple, iOS y correo/password quedan fuera del alcance funcional actual.
+  Apple Sign-In y correo/password quedan fuera del alcance funcional actual.
 - Pruebas ejecutadas: `npm ci`, `npm run lint`, `npm run typecheck` y
   `npm run test:ci`.
 - Evidencia: `/mobile/src/modules/auth`, `/mobile/src/modules/users`,
@@ -198,10 +198,27 @@ Cada sesion de trabajo debe registrar:
   `tapfade-dev`, registro de apps Web y Android, configuracion local de
   variables `EXPO_PUBLIC_*`, versionado/despliegue de reglas iniciales de
   Firestore y registro de SHA-1/SHA-256 de debug para Android.
-- Decisiones: Mantener alcance Android-only; iOS no forma parte del producto
-  actual. Usar reglas de Firestore versionadas en lugar de dejar la base en
-  modo abierto de pruebas.
+- Decisiones: Validar manualmente primero en Android, pero conservar soporte
+  iOS y Android para la app. Usar reglas de Firestore versionadas en lugar de
+  dejar la base en modo abierto de pruebas.
 - Pruebas ejecutadas: `npm run lint`, `npm run typecheck` y `npm run test:ci`.
 - Evidencia: `.firebaserc`, `firebase.json`, `firestore.rules`,
   `/mobile/.env.example` y `docs/architecture/firebase-configuracion.md`.
 - Pendientes: Validar Google Sign-In en Android development build.
+
+### 2026-07-09 - MVP operativo de reservas
+
+- Responsable: Equipo TapFade.
+- Modulo: Barberias / Servicios / Disponibilidad / Citas / Reportes.
+- Actividades: Implementacion de navegacion por rol, alta de barberia activa,
+  administracion de barberos, servicios y disponibilidad, agenda por barbero,
+  citas pendientes con confirmacion/rechazo y reporte semanal de ocupacion.
+- Decisiones: Cualquier usuario autenticado puede crear barberia y queda como
+  `owner`; la agenda usa recarga manual; los slots son de 15 minutos; las
+  citas nacen `pending`.
+- Pruebas ejecutadas: `npm run typecheck` y `npm run test:ci`.
+- Evidencia: `/mobile/src/app/MainNavigator.tsx`, modulos de dominio y
+  repositorios Firestore, `firestore.rules` y pruebas unitarias/integracion
+  mockeada.
+- Pendientes: Validacion manual Android con development build y validacion iOS
+  cuando exista entorno de build.

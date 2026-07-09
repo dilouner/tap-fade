@@ -12,8 +12,10 @@
 |---|---|---|---|
 | Web | TapFade Mobile Config | `1:312781381250:web:43acc3d8809e9879485e9b` | Config Firebase para Expo y Firebase JS SDK |
 | Android | TapFade Android | `com.tapfade.mobile` | App nativa Android y Google Sign-In |
+| iOS | TapFade iOS | `com.tapfade.mobile` | App nativa iOS y Google Sign-In |
 
-iOS queda fuera del alcance actual del producto.
+La app soporta iOS y Android. El proveedor de autenticacion real sigue siendo
+Google Sign-In; Apple Sign-In queda fuera del alcance.
 
 ## Variables locales
 
@@ -30,6 +32,7 @@ EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
 EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=
 ```
 
 La configuracion web de Firebase no es una llave privada, pero debe mantenerse
@@ -62,6 +65,8 @@ Reglas versionadas:
 ## Pendientes de configuracion nativa
 
 - SHA-1/SHA-256 de debug local registrados en Firebase para desarrollo Android.
+- iOS requiere validar el OAuth client ID en un entorno macOS/EAS antes de
+  distribuir builds de prueba.
 - Descargar o regenerar configuracion Android solo si el flujo nativo lo
   requiere durante la validacion en dispositivo.
 - Validar login real en Android development build.

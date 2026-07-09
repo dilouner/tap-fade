@@ -9,7 +9,7 @@ users/{userId}
 barberShops/{barberShopId}
 barberShops/{barberShopId}/services/{serviceId}
 barberShops/{barberShopId}/barbers/{barberId}
-barbers/{barberId}/availability/{availabilityId}
+barberShops/{barberShopId}/availability/{availabilityId}
 appointments/{appointmentId}
 notifications/{notificationId}
 reports/{reportId}
@@ -42,7 +42,7 @@ reports/{reportId}
 - `location`
 - `photoUrl`
 - `ownerId`
-- `status`: `pending | approved | active | inactive`
+- `status`: `active | inactive`
 - `createdAt`
 - `updatedAt`
 
@@ -52,6 +52,8 @@ reports/{reportId}
 - `price`
 - `durationMinutes`
 - `active`
+- `createdAt`
+- `updatedAt`
 
 ## barbers
 
@@ -59,6 +61,8 @@ reports/{reportId}
 - `displayName`
 - `specialties`
 - `active`
+- `createdAt`
+- `updatedAt`
 
 ## availability
 
@@ -67,6 +71,8 @@ reports/{reportId}
 - `endTime`
 - `blocked`
 - `reason`
+- `createdAt`
+- `updatedAt`
 
 ## appointments
 
@@ -74,9 +80,14 @@ reports/{reportId}
 - `barberShopId`
 - `barberId`
 - `serviceId`
+- `clientName`
+- `barberName`
+- `serviceName`
 - `startAt`
 - `endAt`
 - `status`: `pending | confirmed | rejected | cancelled | completed`
+- `priceSnapshot`
+- `durationSnapshot`
 - `createdAt`
 - `updatedAt`
 
@@ -84,7 +95,9 @@ reports/{reportId}
 
 - No debe existir mas de una cita activa para el mismo barbero en la misma
   franja horaria.
-- Solo barberias aprobadas y activas pueden recibir citas.
+- Las barberias creadas por usuarios autenticados quedan activas en el MVP.
+- Solo barberias activas pueden recibir citas.
 - Citas completadas o canceladas no se editan.
 - Cancelacion o reagendado por cliente solo aplica con al menos 1 hora de
   anticipacion.
+- Los solapes se validan en el repositorio de citas antes de crear o editar.
