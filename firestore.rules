@@ -11,11 +11,97 @@ service cloud.firestore {
 
       allow update: if isOwner(userId)
         && request.resource.data.uid == resource.data.uid
-        && request.resource.data.role == resource.data.role;
+        && (
+          request.resource.data.role == resource.data.role ||
+          (resource.data.role == 'client' && request.resource.data.role == 'owner')
+        );
+    }
+
+    match /barberShops/{barberShopId} {
+      allow read: if isSignedIn() && resource.data.status == 'active';
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.status == 'active';
+
+      allow update: if isShopOwner(barberShopId)
+        && request.resource.data.ownerId == resource.data.ownerId;
+
+      match /services/{serviceId} {
+        allow read: if isSignedIn() && isActiveShop(barberShopId);
+        allow create, update: if isShopOwner(barberShopId);
+      }
+
+      match /barbers/{barberId} {
+        allow read: if isSignedIn() && isActiveShop(barberShopId);
+        allow create, update: if isShopOwner(barberShopId);
+      }
+
+      match /availability/{availabilityId} {
+        allow read: if isSignedIn() && isActiveShop(barberShopId);
+        allow create, update: if isShopOwner(barberShopId);
+      }
+    }
+
+    match /appointments/{appointmentId} {
+      allow read: if isSignedIn()
+        && (
+          resource.data.clientId == request.auth.uid ||
+          isShopOwner(resource.data.barberShopId) ||
+          isAssignedBarber(resource.data.barberShopId, resource.data.barberId)
+        );
+
+      allow create: if isSignedIn()
+        && request.resource.data.clientId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && isActiveShop(request.resource.data.barberShopId);
+
+      allow update: if isSignedIn()
+        && (
+          canClientUpdateAppointment() ||
+          canOperatorUpdateAppointment()
+        );
     }
 
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function shopPath(barberShopId) {
+      return /databases/$(database)/documents/barberShops/$(barberShopId);
+    }
+
+    function isActiveShop(barberShopId) {
+      return exists(shopPath(barberShopId)) && get(shopPath(barberShopId)).data.status == 'active';
+    }
+
+    function isShopOwner(barberShopId) {
+      return isSignedIn()
+        && exists(shopPath(barberShopId))
+        && get(shopPath(barberShopId)).data.ownerId == request.auth.uid;
+    }
+
+    function isAssignedBarber(barberShopId, barberId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/barberShops/$(barberShopId)/barbers/$(barberId))
+        && get(/databases/$(database)/documents/barberShops/$(barberShopId)/barbers/$(barberId)).data.userId == request.auth.uid;
+    }
+
+    function canClientUpdateAppointment() {
+      return resource.data.clientId == request.auth.uid
+        && request.resource.data.clientId == resource.data.clientId
+        && request.resource.data.status in ['pending', 'cancelled']
+        && resource.data.status in ['pending', 'confirmed'];
+    }
+
+    function canOperatorUpdateAppointment() {
+      return (isShopOwner(resource.data.barberShopId) || isAssignedBarber(resource.data.barberShopId, resource.data.barberId))
+        && request.resource.data.barberShopId == resource.data.barberShopId
+        && request.resource.data.status in ['confirmed', 'rejected', 'cancelled', 'completed'];
     }
   }
 }

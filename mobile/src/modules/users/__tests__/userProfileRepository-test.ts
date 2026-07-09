@@ -1,19 +1,21 @@
 /* eslint-disable import/first */
 const mockGetDoc = jest.fn();
 const mockSetDoc = jest.fn();
+const mockUpdateDoc = jest.fn();
 const mockDoc = jest.fn((db: unknown, collection: string, id: string) => ({ collection, db, id }));
 
 jest.mock('firebase/firestore', () => ({
   doc: (db: unknown, collection: string, id: string) => mockDoc(db, collection, id),
   getDoc: (ref: unknown) => mockGetDoc(ref),
   setDoc: (ref: unknown, data: unknown, options?: unknown) => mockSetDoc(ref, data, options),
+  updateDoc: (ref: unknown, data: unknown) => mockUpdateDoc(ref, data),
 }));
 
 jest.mock('../../../shared/firebase/config', () => ({
   getFirebaseDb: jest.fn(),
 }));
 
-import { getOrCreateClientProfile } from '../userProfileRepository';
+import { getOrCreateClientProfile, promoteUserToOwner } from '../userProfileRepository';
 import type { AuthenticatedUser } from '../types';
 
 const user: AuthenticatedUser = {
@@ -28,6 +30,7 @@ describe('userProfileRepository', () => {
   beforeEach(() => {
     mockGetDoc.mockReset();
     mockSetDoc.mockReset();
+    mockUpdateDoc.mockReset();
     mockDoc.mockClear();
   });
 
@@ -61,5 +64,12 @@ describe('userProfileRepository', () => {
     expect(mockSetDoc).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ role: 'barber' }), { merge: true });
     expect(profile.role).toBe('barber');
     expect(profile.displayName).toBe('Brandom Borrego');
+  });
+
+  it('promotes a user to owner after creating a barber shop', async () => {
+    await promoteUserToOwner('user-2', {} as never);
+
+    expect(mockDoc).toHaveBeenCalledWith({}, 'users', 'user-2');
+    expect(mockUpdateDoc).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ role: 'owner' }));
   });
 });
