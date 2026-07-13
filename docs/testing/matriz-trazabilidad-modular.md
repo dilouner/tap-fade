@@ -10,6 +10,7 @@
 | notifications | RU-007 | RF-010 | RNF-001 | RN-007 | CP-010 |
 | history | RU-003, RU-006 | RF-011 | RNF-006 | RN-008 | CP-011 |
 | reports | RU-002 | RF-012 | RNF-003 | RN-001 | CP-012 |
+| admin | RU-001, RU-002, RU-003, RU-005, RU-006 | RF-003, RF-007, RF-008, RF-009 | RNF-004, RNF-005, RNF-006 | RN-001, RN-006 | CP-016, CP-017, CP-018, CP-019 |
 
 ## Nota
 

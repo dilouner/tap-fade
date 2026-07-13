@@ -20,7 +20,7 @@ jest.mock('../../../shared/firebase/config', () => ({
   getFirebaseDb: jest.fn(),
 }));
 
-import { createClientAppointment } from '../appointmentRepository';
+import { createClientAppointment, listAllAppointments } from '../appointmentRepository';
 
 const input = {
   barberId: 'barber-1',
@@ -72,5 +72,28 @@ describe('appointmentRepository', () => {
 
     await expect(createClientAppointment(input, {} as never)).rejects.toThrow('barbero ya tiene una cita activa');
     expect(mockSetDoc).not.toHaveBeenCalled();
+  });
+
+  it('lists all appointments for admin monitoring', async () => {
+    mockGetDocs.mockResolvedValue({
+      docs: [
+        {
+          data: () => ({
+            ...input,
+            createdAt: new Date('2026-07-01T00:00:00.000Z'),
+            endAt: new Date('2026-07-10T10:45:00.000Z'),
+            id: 'appointment-1',
+            status: 'pending',
+            updatedAt: new Date('2026-07-01T00:00:00.000Z'),
+          }),
+        },
+      ],
+    });
+
+    const appointments = await listAllAppointments({} as never);
+
+    expect(mockCollection).toHaveBeenCalledWith({}, 'appointments');
+    expect(appointments).toHaveLength(1);
+    expect(appointments[0].status).toBe('pending');
   });
 });

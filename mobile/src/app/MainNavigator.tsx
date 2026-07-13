@@ -19,10 +19,13 @@ import {
 import {
   createOwnedBarberShop,
   createShopBarber,
+  assignUserToBarber,
   getOwnerBarberShop,
+  listAllBarberShops,
   listActiveBarberShops,
   listShopBarbers,
   updateBarberShop,
+  updateBarberShopStatus,
   updateShopBarber,
 } from '../modules/barber-shops/barberShopRepository';
 import { isValidBarber, isValidBarberShop } from '../modules/barber-shops/barberShop';
@@ -38,6 +41,7 @@ import { isValidAvailability } from '../modules/availability/availability';
 import type { AvailabilityBlock, DayOfWeek } from '../modules/availability/types';
 import {
   createClientAppointment,
+  listAllAppointments,
   listClientAppointments,
   listShopAppointments,
   transitionAppointment,
@@ -46,7 +50,8 @@ import {
 import { addMinutes, canEditAppointment, canTransitionAppointment } from '../modules/appointments/appointmentRules';
 import type { Appointment, AppointmentStatus } from '../modules/appointments/types';
 import { buildWeeklyOccupancyReport } from '../modules/reports/weeklyReport';
-import type { UserProfile } from '../modules/users/types';
+import { listUsers, updateUserRole } from '../modules/users/userProfileRepository';
+import type { UserProfile, UserRole } from '../modules/users/types';
 import {
   AppointmentCard,
   BarberCard,
@@ -72,6 +77,9 @@ const ClientAppointmentsStack = createNativeStackNavigator();
 const BarberAgendaStack = createNativeStackNavigator();
 const OwnerShopStack = createNativeStackNavigator();
 const OwnerAgendaStack = createNativeStackNavigator();
+const AdminUsersStack = createNativeStackNavigator();
+const AdminShopsStack = createNativeStackNavigator();
+const AdminAppointmentsStack = createNativeStackNavigator();
 
 const dayLabels = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
 const bookingSlots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00'];
@@ -91,6 +99,7 @@ type AppData = {
   ownedShop: BarberShop | null;
   services: BarberService[];
   shops: BarberShop[];
+  users: UserProfile[];
 };
 
 const initialData: AppData = {
@@ -103,6 +112,7 @@ const initialData: AppData = {
   ownedShop: null,
   services: [],
   shops: [],
+  users: [],
 };
 
 type ScreenContext = {
@@ -177,10 +187,12 @@ export function MainNavigator({ onSignOut, profile }: MainNavigatorProps) {
 
     try {
       const [shops, ownedShop, clientAppointments] = await Promise.all([
-        listActiveBarberShops(),
+        profile.role === 'admin' ? listAllBarberShops() : listActiveBarberShops(),
         getOwnerBarberShop(profile.uid),
         listClientAppointments(profile.uid),
       ]);
+      const users = profile.role === 'admin' ? await listUsers() : [];
+      const allAppointments = profile.role === 'admin' ? await listAllAppointments() : null;
 
       let activeShop = ownedShop;
       let activeBarber: Barber | null = null;
@@ -203,7 +215,7 @@ export function MainNavigator({ onSignOut, profile }: MainNavigatorProps) {
             listShopServices(shopForOperations.id),
             listShopBarbers(shopForOperations.id),
             listShopAvailability(shopForOperations.id),
-            listShopAppointments(shopForOperations.id),
+            allAppointments ?? listShopAppointments(shopForOperations.id),
           ])
         : [[], [], [], []];
 
@@ -221,6 +233,7 @@ export function MainNavigator({ onSignOut, profile }: MainNavigatorProps) {
         ownedShop,
         services,
         shops,
+        users,
       });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'No fue posible cargar TapFade.');
@@ -247,7 +260,11 @@ export function MainNavigator({ onSignOut, profile }: MainNavigatorProps) {
     );
   }
 
-  if (profile.role === 'owner' || profile.role === 'admin') {
+  if (profile.role === 'admin') {
+    return <AdminNavigator context={context} onSignOut={onSignOut} />;
+  }
+
+  if (profile.role === 'owner') {
     return <OwnerNavigator context={context} onSignOut={onSignOut} />;
   }
 
@@ -324,6 +341,72 @@ function OwnerNavigator({ context, onSignOut }: { context: ScreenContext; onSign
         </Tab.Screen>
       </Tab.Navigator>
     </NavigationContainer>
+  );
+}
+
+function AdminNavigator({ context, onSignOut }: { context: ScreenContext; onSignOut: () => void }) {
+  return (
+    <NavigationContainer>
+      <Tab.Navigator screenOptions={tabOptions}>
+        <Tab.Screen name="Inicio" options={{ tabBarIcon: tabIcon('shield-checkmark-outline') }}>
+          {() => <AdminHomeScreen context={context} />}
+        </Tab.Screen>
+        <Tab.Screen name="Usuarios" options={{ headerShown: false, tabBarIcon: tabIcon('people-outline') }}>
+          {() => <AdminUsersNavigator context={context} />}
+        </Tab.Screen>
+        <Tab.Screen name="Barberias" options={{ headerShown: false, tabBarIcon: tabIcon('business-outline') }}>
+          {() => <AdminShopsNavigator context={context} />}
+        </Tab.Screen>
+        <Tab.Screen name="Citas" options={{ headerShown: false, tabBarIcon: tabIcon('calendar-outline') }}>
+          {() => <AdminAppointmentsNavigator context={context} />}
+        </Tab.Screen>
+        <Tab.Screen name="Soporte" options={{ tabBarIcon: tabIcon('construct-outline') }}>
+          {() => <AdminSupportScreen context={context} />}
+        </Tab.Screen>
+        <Tab.Screen name="Perfil" options={{ tabBarIcon: tabIcon('person-outline') }}>
+          {() => <ProfileScreen onSignOut={onSignOut} profile={context.profile} />}
+        </Tab.Screen>
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
+}
+
+function AdminUsersNavigator({ context }: { context: ScreenContext }) {
+  return (
+    <AdminUsersStack.Navigator screenOptions={{ headerShown: false }}>
+      <AdminUsersStack.Screen name="Users">
+        {(props) => <AdminUsersScreen {...props} context={context} />}
+      </AdminUsersStack.Screen>
+      <AdminUsersStack.Screen name="UserDetail">
+        {(props) => <AdminUserDetailScreen {...props} context={context} />}
+      </AdminUsersStack.Screen>
+    </AdminUsersStack.Navigator>
+  );
+}
+
+function AdminShopsNavigator({ context }: { context: ScreenContext }) {
+  return (
+    <AdminShopsStack.Navigator screenOptions={{ headerShown: false }}>
+      <AdminShopsStack.Screen name="Shops">
+        {(props) => <AdminShopsScreen {...props} context={context} />}
+      </AdminShopsStack.Screen>
+      <AdminShopsStack.Screen name="ShopDetail">
+        {(props) => <AdminShopDetailScreen {...props} context={context} />}
+      </AdminShopsStack.Screen>
+    </AdminShopsStack.Navigator>
+  );
+}
+
+function AdminAppointmentsNavigator({ context }: { context: ScreenContext }) {
+  return (
+    <AdminAppointmentsStack.Navigator screenOptions={{ headerShown: false }}>
+      <AdminAppointmentsStack.Screen name="Appointments">
+        {(props) => <AdminAppointmentsScreen {...props} context={context} />}
+      </AdminAppointmentsStack.Screen>
+      <AdminAppointmentsStack.Screen name="AppointmentDetail">
+        {(props) => <OperatorAppointmentDetailScreen {...props} context={context} />}
+      </AdminAppointmentsStack.Screen>
+    </AdminAppointmentsStack.Navigator>
   );
 }
 
@@ -1129,6 +1212,280 @@ function ReportsScreen({ context }: { context: ScreenContext }) {
   );
 }
 
+function AdminHomeScreen({ context }: { context: ScreenContext }) {
+  const activeShops = context.data.shops.filter((shop) => shop.status === 'active');
+  const pendingAppointments = appointmentsByStatus(context.data.appointments, 'pending');
+  const alerts = buildAdminAlerts(context);
+
+  return (
+    <Screen eyebrow="Admin" title="Control de plataforma">
+      <View style={styles.inlineCards}>
+        <StatCard label="Usuarios" value={String(context.data.users.length)} />
+        <StatCard label="Barberias" value={String(activeShops.length)} />
+      </View>
+      <View style={styles.inlineCards}>
+        <StatCard label="Citas pendientes" value={String(pendingAppointments.length)} />
+        <StatCard label="Alertas" value={String(alerts.length)} />
+      </View>
+      {alerts.length === 0 ? (
+        <EmptyState icon="checkmark-done-outline" message="No hay casos operativos pendientes." title="Plataforma en orden" />
+      ) : (
+        alerts.slice(0, 4).map((alert) => <AdminAlertCard key={alert} text={alert} />)
+      )}
+    </Screen>
+  );
+}
+
+function AdminUsersScreen({ context, navigation }: any) {
+  const [queryText, setQueryText] = useState('');
+  const filteredUsers = context.data.users.filter((user: UserProfile) => {
+    const needle = queryText.toLowerCase().trim();
+    return !needle || user.displayName.toLowerCase().includes(needle) || user.email.toLowerCase().includes(needle);
+  });
+
+  return (
+    <Screen eyebrow="Admin" title="Usuarios">
+      <LabeledField label="Buscar" onChangeText={setQueryText} placeholder="Nombre o correo" value={queryText} />
+      {filteredUsers.length === 0 ? (
+        <EmptyState icon="people-outline" message="No hay usuarios que coincidan con la busqueda." title="Sin resultados" />
+      ) : (
+        filteredUsers.map((user: UserProfile) => (
+          <Pressable
+            key={user.uid}
+            onPress={() => navigation.navigate('UserDetail', { userId: user.uid })}
+            style={styles.menuRow}
+          >
+            <Ionicons color={colors.blue} name="person-circle-outline" size={24} />
+            <View style={styles.rowText}>
+              <Text style={styles.menuText}>{user.displayName || user.email}</Text>
+              <Text style={styles.muted}>{user.email}</Text>
+            </View>
+            <Text style={styles.roleBadge}>{user.role}</Text>
+          </Pressable>
+        ))
+      )}
+    </Screen>
+  );
+}
+
+function AdminUserDetailScreen({ context, route }: any) {
+  const user = context.data.users.find((item: UserProfile) => item.uid === route.params?.userId);
+  const [role, setRole] = useState<UserRole>(user?.role ?? 'client');
+  const [shopId, setShopId] = useState(context.data.shops[0]?.id ?? '');
+  const [shopBarbers, setShopBarbers] = useState<Barber[]>([]);
+  const [selectedBarberId, setSelectedBarberId] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadBarbers() {
+      if (!shopId) {
+        setShopBarbers([]);
+        return;
+      }
+      const barbers = await listShopBarbers(shopId);
+      if (mounted) {
+        setShopBarbers(barbers);
+        setSelectedBarberId(barbers[0]?.id ?? '');
+      }
+    }
+    void loadBarbers();
+    return () => {
+      mounted = false;
+    };
+  }, [shopId]);
+
+  if (!user) {
+    return <Screen title="Usuario"><EmptyState message="No encontramos este usuario." title="Usuario no disponible" /></Screen>;
+  }
+
+  async function submitRole() {
+    await updateUserRole(user.uid, role);
+    await context.refresh();
+  }
+
+  async function submitBarberAssignment() {
+    if (!shopId || !selectedBarberId) {
+      context.onMessage('Selecciona barberia y barbero para vincular.');
+      return;
+    }
+    await assignUserToBarber(shopId, selectedBarberId, user.uid);
+    await context.refresh();
+  }
+
+  return (
+    <Screen eyebrow="Admin" title={user.displayName || 'Usuario'}>
+      <SummaryLine label="Correo" value={user.email} />
+      <SummaryLine label="Rol actual" value={user.role} />
+      <SegmentedControl
+        value={role}
+        onChange={setRole}
+        options={[
+          { label: 'Cliente', value: 'client' },
+          { label: 'Barbero', value: 'barber' },
+          { label: 'Dueno', value: 'owner' },
+          { label: 'Admin', value: 'admin' },
+        ]}
+      />
+      <PrimaryButton label="Guardar rol" onPress={() => void submitRole()} />
+      {role === 'barber' ? (
+        <View style={styles.summaryCard}>
+          <Text style={styles.cardTitle}>Vincular barbero</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {context.data.shops.map((shop: BarberShop) => (
+              <Pressable key={shop.id} onPress={() => setShopId(shop.id)} style={[styles.chip, shopId === shop.id && styles.chipActive]}>
+                <Text style={[styles.chipText, shopId === shop.id && styles.chipTextActive]}>{shop.name}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {shopBarbers.map((barber) => (
+              <Pressable
+                key={barber.id}
+                onPress={() => setSelectedBarberId(barber.id)}
+                style={[styles.chip, selectedBarberId === barber.id && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, selectedBarberId === barber.id && styles.chipTextActive]}>{barber.displayName}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <PrimaryButton label="Vincular usuario" onPress={() => void submitBarberAssignment()} />
+        </View>
+      ) : null}
+      {context.message ? <Text style={styles.notice}>{context.message}</Text> : null}
+    </Screen>
+  );
+}
+
+function AdminShopsScreen({ context, navigation }: any) {
+  return (
+    <Screen eyebrow="Admin" title="Barberias">
+      {context.data.shops.length === 0 ? (
+        <EmptyState icon="business-outline" message="Aun no hay barberias registradas." title="Sin barberias" />
+      ) : (
+        context.data.shops.map((shop: BarberShop) => (
+          <Pressable key={shop.id} onPress={() => navigation.navigate('ShopDetail', { shopId: shop.id })}>
+            <ShopCard address={`${shop.address} · ${shop.status}`} image={asImageSource(shop.photoUrl)} name={shop.name} />
+          </Pressable>
+        ))
+      )}
+    </Screen>
+  );
+}
+
+function AdminShopDetailScreen({ context, route }: any) {
+  const shop = context.data.shops.find((item: BarberShop) => item.id === route.params?.shopId);
+  const [services, setServices] = useState<BarberService[]>([]);
+  const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadShopData() {
+      if (!shop) {
+        return;
+      }
+      const [shopServices, shopBarbers, shopAppointments] = await Promise.all([
+        listShopServices(shop.id),
+        listShopBarbers(shop.id),
+        listShopAppointments(shop.id),
+      ]);
+      if (mounted) {
+        setServices(shopServices);
+        setBarbers(shopBarbers);
+        setAppointments(shopAppointments);
+      }
+    }
+    void loadShopData();
+    return () => {
+      mounted = false;
+    };
+  }, [shop]);
+
+  if (!shop) {
+    return <Screen title="Barberia"><EmptyState message="No encontramos esta barberia." title="Barberia no disponible" /></Screen>;
+  }
+
+  async function toggleStatus() {
+    await updateBarberShopStatus(shop.id, shop.status === 'active' ? 'inactive' : 'active');
+    await context.refresh();
+  }
+
+  return (
+    <Screen eyebrow="Admin" title={shop.name}>
+      <ShopCard address={shop.address} image={asImageSource(shop.photoUrl)} name={shop.name} />
+      <StatusPill status={shop.status} />
+      <SummaryLine label="Owner ID" value={shop.ownerId} />
+      <View style={styles.inlineCards}>
+        <StatCard label="Servicios" value={String(services.length)} />
+        <StatCard label="Barberos" value={String(barbers.length)} />
+      </View>
+      <StatCard label="Citas" value={String(appointments.length)} />
+      <PrimaryButton label={shop.status === 'active' ? 'Inactivar barberia' : 'Activar barberia'} onPress={() => void toggleStatus()} />
+    </Screen>
+  );
+}
+
+function AdminAppointmentsScreen({ context, navigation }: any) {
+  const [filter, setFilter] = useState<'all' | AppointmentStatus>('all');
+  const appointments = sortAppointments(
+    context.data.appointments.filter((appointment: Appointment) => filter === 'all' || appointment.status === filter),
+  );
+
+  return (
+    <Screen eyebrow="Admin" title="Monitor de citas">
+      <SegmentedControl
+        value={filter}
+        onChange={setFilter}
+        options={[
+          { label: 'Todas', value: 'all' },
+          { label: 'Pend.', value: 'pending' },
+          { label: 'Conf.', value: 'confirmed' },
+          { label: 'Canc.', value: 'cancelled' },
+        ]}
+      />
+      {appointments.length === 0 ? (
+        <EmptyState message="No hay citas para este filtro." title="Sin citas" />
+      ) : (
+        appointments.map((appointment) => (
+          <AppointmentCard
+            key={appointment.id}
+            client={`${appointment.clientName} · ${appointment.barberName}`}
+            date={formatDateTime(appointment.startAt)}
+            onPress={() => navigation.navigate('AppointmentDetail', { appointmentId: appointment.id })}
+            service={appointment.serviceName}
+            status={appointment.status}
+          />
+        ))
+      )}
+    </Screen>
+  );
+}
+
+function AdminSupportScreen({ context }: { context: ScreenContext }) {
+  const alerts = buildAdminAlerts(context);
+
+  return (
+    <Screen eyebrow="Admin" title="Soporte operativo">
+      {alerts.length === 0 ? (
+        <EmptyState icon="checkmark-done-outline" message="No hay alertas operativas pendientes." title="Sin alertas" />
+      ) : (
+        alerts.map((alert) => <AdminAlertCard key={alert} text={alert} />)
+      )}
+    </Screen>
+  );
+}
+
+function AdminAlertCard({ text }: { text: string }) {
+  return (
+    <View style={styles.summaryCard}>
+      <View style={styles.inline}>
+        <Ionicons color={colors.warning} name="warning-outline" size={18} />
+        <Text style={styles.cardTitle}>{text}</Text>
+      </View>
+    </View>
+  );
+}
+
 function ProfileScreen({ onSignOut, profile }: { onSignOut: () => void; profile: UserProfile }) {
   return (
     <Screen eyebrow="Perfil" title={profile.displayName || 'Usuario TapFade'}>
@@ -1146,6 +1503,37 @@ async function changeAppointmentStatus(context: ScreenContext, appointment: Appo
   }
   await transitionAppointment(appointment.id, status);
   await context.refresh();
+}
+
+function buildAdminAlerts(context: ScreenContext) {
+  const alerts: string[] = [];
+  const assignedUserIds = new Set(context.data.barbers.map((barber) => barber.userId).filter(Boolean));
+  const barberUsers = context.data.users.filter((user) => user.role === 'barber');
+
+  for (const user of barberUsers) {
+    if (!assignedUserIds.has(user.uid)) {
+      alerts.push(`${user.displayName || user.email} tiene rol barbero sin vinculacion`);
+    }
+  }
+
+  if (context.data.activeShop && context.data.services.length === 0) {
+    alerts.push(`${context.data.activeShop.name} no tiene servicios configurados`);
+  }
+
+  if (context.data.activeShop && context.data.barbers.length === 0) {
+    alerts.push(`${context.data.activeShop.name} no tiene barberos configurados`);
+  }
+
+  const oldPending = context.data.appointments.filter((appointment) => {
+    const hours = (Date.now() - appointment.createdAt.getTime()) / (1000 * 60 * 60);
+    return appointment.status === 'pending' && hours > 24;
+  });
+
+  if (oldPending.length > 0) {
+    alerts.push(`${oldPending.length} citas llevan mas de 24h pendientes`);
+  }
+
+  return alerts;
 }
 
 function LabeledField({
@@ -1283,6 +1671,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
+  inline: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
   input: {
     backgroundColor: colors.surface,
     borderColor: colors.coolGrey,
@@ -1321,6 +1714,19 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: typography.bodyBlack,
     fontSize: 15,
+  },
+  roleBadge: {
+    backgroundColor: colors.blueGlow,
+    borderRadius: 7,
+    color: colors.graphite,
+    fontFamily: typography.bodyBlack,
+    fontSize: 11,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  rowText: {
+    flex: 1,
+    gap: spacing.xs,
   },
   miniButton: {
     alignItems: 'center',

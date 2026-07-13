@@ -7,45 +7,51 @@ service cloud.firestore {
         && request.resource.data.uid == userId
         && request.resource.data.role == 'client';
 
-      allow read: if isOwner(userId);
+      allow read: if isOwner(userId) || isAdmin();
 
       allow update: if isOwner(userId)
         && request.resource.data.uid == resource.data.uid
         && (
           request.resource.data.role == resource.data.role ||
           (resource.data.role == 'client' && request.resource.data.role == 'owner')
+        )
+        || (
+          isAdmin()
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.role in ['client', 'barber', 'owner', 'admin']
         );
     }
 
     match /barberShops/{barberShopId} {
-      allow read: if isSignedIn() && resource.data.status == 'active';
+      allow read: if isAdmin() || (isSignedIn() && resource.data.status == 'active');
 
       allow create: if isSignedIn()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.status == 'active';
 
-      allow update: if isShopOwner(barberShopId)
+      allow update: if (isShopOwner(barberShopId) || isAdmin())
         && request.resource.data.ownerId == resource.data.ownerId;
 
       match /services/{serviceId} {
-        allow read: if isSignedIn() && isActiveShop(barberShopId);
-        allow create, update: if isShopOwner(barberShopId);
+        allow read: if isAdmin() || (isSignedIn() && isActiveShop(barberShopId));
+        allow create, update: if isShopOwner(barberShopId) || isAdmin();
       }
 
       match /barbers/{barberId} {
-        allow read: if isSignedIn() && isActiveShop(barberShopId);
-        allow create, update: if isShopOwner(barberShopId);
+        allow read: if isAdmin() || (isSignedIn() && isActiveShop(barberShopId));
+        allow create, update: if isShopOwner(barberShopId) || isAdmin();
       }
 
       match /availability/{availabilityId} {
-        allow read: if isSignedIn() && isActiveShop(barberShopId);
-        allow create, update: if isShopOwner(barberShopId);
+        allow read: if isAdmin() || (isSignedIn() && isActiveShop(barberShopId));
+        allow create, update: if isShopOwner(barberShopId) || isAdmin();
       }
     }
 
     match /appointments/{appointmentId} {
       allow read: if isSignedIn()
         && (
+          isAdmin() ||
           resource.data.clientId == request.auth.uid ||
           isShopOwner(resource.data.barberShopId) ||
           isAssignedBarber(resource.data.barberShopId, resource.data.barberId)
@@ -58,6 +64,7 @@ service cloud.firestore {
 
       allow update: if isSignedIn()
         && (
+          isAdmin() ||
           canClientUpdateAppointment() ||
           canOperatorUpdateAppointment()
         );
@@ -69,6 +76,12 @@ service cloud.firestore {
 
     function isSignedIn() {
       return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     function shopPath(barberShopId) {

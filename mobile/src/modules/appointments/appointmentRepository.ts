@@ -41,6 +41,11 @@ export async function listClientAppointments(clientId: string, db: Firestore = g
   return snapshot.docs.map((item) => normalizeAppointment(item.data() as AppointmentRecord));
 }
 
+export async function listAllAppointments(db: Firestore = getFirebaseDb()): Promise<Appointment[]> {
+  const snapshot = await getDocs(collection(db, 'appointments'));
+  return snapshot.docs.map((item) => normalizeAppointment(item.data() as AppointmentRecord));
+}
+
 export async function createClientAppointment(input: AppointmentInput, db: Firestore = getFirebaseDb()): Promise<Appointment> {
   const appointmentRef = doc(collection(db, 'appointments'));
   const appointment = createAppointment(input, appointmentRef.id);

@@ -54,6 +54,7 @@ npm run test:watch
 | UI compartida | Unitarias | Configurado | `PrimaryButton-test.tsx`, `InputField-test.tsx`, `AppUI-test.tsx` |
 | Auth + roles | Unitarias + integracion mockeada | Configurado | `authSession-test.ts`, `userProfile-test.ts`, `userProfileRepository-test.ts`, `AppShell-test.tsx` |
 | Booking core | Unitarias + integracion mockeada | Configurado | `barberShop-test.ts`, `serviceCatalog-test.ts`, `availability-test.ts`, `appointmentRules-test.ts`, `appointmentRepository-test.ts`, `weeklyReport-test.ts` |
+| Admin / soporte | Unitarias + integracion mockeada | Configurado | `userProfileRepository-test.ts`, `barberShopRepository-test.ts`, `appointmentRepository-test.ts` |
 | Pipeline CI | Lint + typecheck + unitarias | Configurado | `.github/workflows/mobile-ci.yml` |
 
 ## Reglas para nuevas pruebas
@@ -88,3 +89,7 @@ npm run test:watch
 | CP-013 | Navegar por tabs segun rol de usuario |
 | CP-014 | Mostrar estados vacios para cliente, barbero y dueno |
 | CP-015 | Visualizar fotos de barberia/barbero con fallback local |
+| CP-016 | Admin cambia rol de usuario |
+| CP-017 | Admin vincula usuario barbero a barbero de barberia |
+| CP-018 | Admin activa o inactiva barberia |
+| CP-019 | Admin monitorea citas globales y cambia estado por soporte |

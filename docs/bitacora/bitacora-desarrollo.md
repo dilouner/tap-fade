@@ -240,3 +240,19 @@ Cada sesion de trabajo debe registrar:
   `/mobile/src/shared/components/AppUI.tsx`, pruebas UI y cambios de tipos en
   `/mobile/src/modules/barber-shops`.
 - Pendientes: Validacion manual en dispositivo Android/iOS y PR a `develop`.
+
+### 2026-07-13 - Admin operativo
+
+- Responsable: Brandom Borrego, Daniel Ramirez / dilouner y Gustavo Pando.
+- Modulo: Admin / Users / Barberias / Citas / Firestore Rules.
+- Actividades: Implementacion de repositorios admin, reglas Firestore para
+  `role: admin`, navegador admin, gestion de roles, vinculacion de barberos,
+  revision de barberias, monitor de citas y soporte operativo.
+- Decisiones: El primer admin se crea manualmente en Firestore; la app solo
+  permite operar admin cuando el perfil ya tiene `role: admin`.
+- Pruebas ejecutadas: `npm run lint`, `npm run typecheck` y
+  `npm run test:ci`.
+- Evidencia: `/mobile/src/app/MainNavigator.tsx`, `firestore.rules`,
+  `/mobile/src/modules/users`, `/mobile/src/modules/barber-shops` y
+  `/mobile/src/modules/appointments`.
+- Pendientes: Validacion manual en dispositivo y PR a `develop`.
