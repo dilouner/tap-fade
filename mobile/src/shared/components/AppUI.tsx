@@ -299,8 +299,6 @@ export function AppointmentCard({
   );
 }
 
-export const uiStyles = styles;
-
 const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
