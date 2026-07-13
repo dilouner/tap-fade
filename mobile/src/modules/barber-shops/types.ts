@@ -5,6 +5,7 @@ export type BarberShop = {
   name: string;
   description: string;
   address: string;
+  photoUrl: string | null;
   ownerId: string;
   status: BarberShopStatus;
   createdAt: Date;
@@ -16,6 +17,7 @@ export type Barber = {
   barberShopId: string;
   userId: string | null;
   displayName: string;
+  photoUrl: string | null;
   specialties: string[];
   active: boolean;
   createdAt: Date;
@@ -26,12 +28,14 @@ export type BarberShopInput = {
   name: string;
   description: string;
   address: string;
+  photoUrl?: string | null;
   ownerId: string;
 };
 
 export type BarberInput = {
   barberShopId: string;
   displayName: string;
+  photoUrl?: string | null;
   specialties?: string[];
   userId?: string | null;
 };

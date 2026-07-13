@@ -55,6 +55,7 @@ export async function updateBarberShop(shop: BarberShop, db: Firestore = getFire
     address: shop.address.trim(),
     description: shop.description.trim(),
     name: shop.name.trim(),
+    photoUrl: shop.photoUrl?.trim() || null,
     updatedAt: new Date(),
   });
 }
@@ -81,6 +82,7 @@ export async function updateShopBarber(barber: Barber, db: Firestore = getFireba
   await updateDoc(doc(db, 'barberShops', barber.barberShopId, 'barbers', barber.id), {
     active: barber.active,
     displayName: barber.displayName.trim(),
+    photoUrl: barber.photoUrl?.trim() || null,
     specialties: barber.specialties,
     updatedAt: new Date(),
     userId: barber.userId,
