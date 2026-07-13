@@ -51,7 +51,7 @@ npm run test:watch
 
 | Area | Tipo | Estado | Evidencia |
 |---|---|---|---|
-| UI compartida | Unitarias | Configurado | `PrimaryButton-test.tsx`, `InputField-test.tsx` |
+| UI compartida | Unitarias | Configurado | `PrimaryButton-test.tsx`, `InputField-test.tsx`, `AppUI-test.tsx` |
 | Auth + roles | Unitarias + integracion mockeada | Configurado | `authSession-test.ts`, `userProfile-test.ts`, `userProfileRepository-test.ts`, `AppShell-test.tsx` |
 | Booking core | Unitarias + integracion mockeada | Configurado | `barberShop-test.ts`, `serviceCatalog-test.ts`, `availability-test.ts`, `appointmentRules-test.ts`, `appointmentRepository-test.ts`, `weeklyReport-test.ts` |
 | Pipeline CI | Lint + typecheck + unitarias | Configurado | `.github/workflows/mobile-ci.yml` |
@@ -85,3 +85,6 @@ npm run test:watch
 | CP-010 | Recordatorios automaticos |
 | CP-011 | Consultar historial de citas |
 | CP-012 | Generar reporte de ocupacion |
+| CP-013 | Navegar por tabs segun rol de usuario |
+| CP-014 | Mostrar estados vacios para cliente, barbero y dueno |
+| CP-015 | Visualizar fotos de barberia/barbero con fallback local |

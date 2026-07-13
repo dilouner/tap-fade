@@ -222,3 +222,21 @@ Cada sesion de trabajo debe registrar:
   mockeada.
 - Pendientes: Validacion manual Android con development build y validacion iOS
   cuando exista entorno de build.
+
+### 2026-07-13 - Rediseno UI y navegacion por rol
+
+- Responsable: Brandom Borrego, Daniel Ramirez / dilouner y Gustavo Pando.
+- Modulo: UI compartida / Navegacion / Barberias / Citas / Disponibilidad /
+  Reportes.
+- Actividades: Redisenio de tokens visuales TapFade, componentes reutilizables,
+  navegadores por rol, vistas cliente, vistas barbero, vistas dueno y soporte
+  `photoUrl` para barberias y barberos.
+- Decisiones: Usar tabs por rol con stacks internos, iconografia
+  `@expo/vector-icons`, fallbacks locales de marca y persistencia de imagenes
+  como URL sin implementar subida a Storage.
+- Pruebas ejecutadas: `npm run lint`, `npm run typecheck` y
+  `npm run test:ci`.
+- Evidencia: `/mobile/src/app/MainNavigator.tsx`,
+  `/mobile/src/shared/components/AppUI.tsx`, pruebas UI y cambios de tipos en
+  `/mobile/src/modules/barber-shops`.
+- Pendientes: Validacion manual en dispositivo Android/iOS y PR a `develop`.
