@@ -1,8 +1,8 @@
-import { doc, getDoc, setDoc, updateDoc, type Firestore } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, updateDoc, type Firestore } from 'firebase/firestore';
 
 import { getFirebaseDb } from '../../shared/firebase/config';
 import { createClientProfile, mergeExistingProfile } from './userProfile';
-import type { AuthenticatedUser, UserProfile } from './types';
+import type { AuthenticatedUser, UserProfile, UserRole } from './types';
 
 type UserProfileRecord = Omit<UserProfile, 'createdAt' | 'updatedAt'> & {
   createdAt: Date | { toDate: () => Date };
@@ -44,6 +44,23 @@ export async function getOrCreateClientProfile(
 export async function promoteUserToOwner(userId: string, db: Firestore = getFirebaseDb()): Promise<void> {
   await updateDoc(doc(db, 'users', userId), {
     role: 'owner',
+    updatedAt: new Date(),
+  });
+}
+
+export async function listUsers(db: Firestore = getFirebaseDb()): Promise<UserProfile[]> {
+  const snapshot = await getDocs(collection(db, 'users'));
+  return snapshot.docs.map((item) => normalizeProfile(item.data() as UserProfileRecord));
+}
+
+export async function getUserProfile(userId: string, db: Firestore = getFirebaseDb()): Promise<UserProfile | null> {
+  const snapshot = await getDoc(doc(db, 'users', userId));
+  return snapshot.exists() ? normalizeProfile(snapshot.data() as UserProfileRecord) : null;
+}
+
+export async function updateUserRole(userId: string, role: UserRole, db: Firestore = getFirebaseDb()): Promise<void> {
+  await updateDoc(doc(db, 'users', userId), {
+    role,
     updatedAt: new Date(),
   });
 }

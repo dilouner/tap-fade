@@ -60,6 +60,22 @@ export async function updateBarberShop(shop: BarberShop, db: Firestore = getFire
   });
 }
 
+export async function updateBarberShopStatus(
+  barberShopId: string,
+  status: BarberShop['status'],
+  db: Firestore = getFirebaseDb(),
+): Promise<void> {
+  await updateDoc(doc(db, 'barberShops', barberShopId), {
+    status,
+    updatedAt: new Date(),
+  });
+}
+
+export async function listAllBarberShops(db: Firestore = getFirebaseDb()): Promise<BarberShop[]> {
+  const snapshot = await getDocs(collection(db, 'barberShops'));
+  return snapshot.docs.map((item) => normalizeBarberShop(item.data() as BarberShopRecord));
+}
+
 export async function listActiveBarberShops(db: Firestore = getFirebaseDb()): Promise<BarberShop[]> {
   const snapshot = await getDocs(query(collection(db, 'barberShops'), where('status', '==', 'active')));
   return snapshot.docs.map((item) => normalizeBarberShop(item.data() as BarberShopRecord));
@@ -86,6 +102,18 @@ export async function updateShopBarber(barber: Barber, db: Firestore = getFireba
     specialties: barber.specialties,
     updatedAt: new Date(),
     userId: barber.userId,
+  });
+}
+
+export async function assignUserToBarber(
+  barberShopId: string,
+  barberId: string,
+  userId: string | null,
+  db: Firestore = getFirebaseDb(),
+): Promise<void> {
+  await updateDoc(doc(db, 'barberShops', barberShopId, 'barbers', barberId), {
+    updatedAt: new Date(),
+    userId: userId?.trim() || null,
   });
 }
 
