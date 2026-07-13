@@ -7,12 +7,14 @@ describe('barber shop domain', () => {
       description: 'Fades y barba',
       name: ' TapFade Studio ',
       ownerId: 'owner-1',
+      photoUrl: ' https://example.com/shop.jpg ',
     }, 'shop-1');
 
     expect(shop).toMatchObject({
       id: 'shop-1',
       name: 'TapFade Studio',
       ownerId: 'owner-1',
+      photoUrl: 'https://example.com/shop.jpg',
       status: 'active',
     });
     expect(isValidBarberShop(shop)).toBe(true);
@@ -22,12 +24,14 @@ describe('barber shop domain', () => {
     const barber = createBarber({
       barberShopId: 'shop-1',
       displayName: ' Daniel ',
+      photoUrl: '',
       specialties: [' fade ', '', 'barba'],
     }, 'barber-1');
 
     expect(barber).toMatchObject({
       active: true,
       displayName: 'Daniel',
+      photoUrl: null,
       specialties: ['fade', 'barba'],
       userId: null,
     });
