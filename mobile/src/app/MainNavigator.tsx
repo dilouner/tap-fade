@@ -159,7 +159,11 @@ function sortAppointments(appointments: Appointment[]) {
 }
 
 function tabIcon(name: React.ComponentProps<typeof Ionicons>['name']) {
-  return ({ color, size }: { color: string; size: number }) => <Ionicons color={color} name={name} size={size} />;
+  function TabBarIcon({ color, size }: { color: string; size: number }) {
+    return <Ionicons color={color} name={name} size={size} />;
+  }
+
+  return TabBarIcon;
 }
 
 export function MainNavigator({ onSignOut, profile }: MainNavigatorProps) {

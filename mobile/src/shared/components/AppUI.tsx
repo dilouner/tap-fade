@@ -141,7 +141,7 @@ export function SegmentedControl<T extends string>({
   value,
 }: {
   onChange: (value: T) => void;
-  options: Array<{ label: string; value: T }>;
+  options: { label: string; value: T }[];
   value: T;
 }) {
   return (
