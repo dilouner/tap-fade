@@ -1,12 +1,16 @@
 /* eslint-disable import/first */
 const mockGetDoc = jest.fn();
+const mockGetDocs = jest.fn();
 const mockSetDoc = jest.fn();
 const mockUpdateDoc = jest.fn();
+const mockCollection = jest.fn((db: unknown, collection: string) => ({ collection, db }));
 const mockDoc = jest.fn((db: unknown, collection: string, id: string) => ({ collection, db, id }));
 
 jest.mock('firebase/firestore', () => ({
+  collection: (db: unknown, collection: string) => mockCollection(db, collection),
   doc: (db: unknown, collection: string, id: string) => mockDoc(db, collection, id),
   getDoc: (ref: unknown) => mockGetDoc(ref),
+  getDocs: (ref: unknown) => mockGetDocs(ref),
   setDoc: (ref: unknown, data: unknown, options?: unknown) => mockSetDoc(ref, data, options),
   updateDoc: (ref: unknown, data: unknown) => mockUpdateDoc(ref, data),
 }));
@@ -15,7 +19,7 @@ jest.mock('../../../shared/firebase/config', () => ({
   getFirebaseDb: jest.fn(),
 }));
 
-import { getOrCreateClientProfile, promoteUserToOwner } from '../userProfileRepository';
+import { getOrCreateClientProfile, listUsers, promoteUserToOwner, updateUserRole } from '../userProfileRepository';
 import type { AuthenticatedUser } from '../types';
 
 const user: AuthenticatedUser = {
@@ -29,8 +33,10 @@ const user: AuthenticatedUser = {
 describe('userProfileRepository', () => {
   beforeEach(() => {
     mockGetDoc.mockReset();
+    mockGetDocs.mockReset();
     mockSetDoc.mockReset();
     mockUpdateDoc.mockReset();
+    mockCollection.mockClear();
     mockDoc.mockClear();
   });
 
@@ -71,5 +77,37 @@ describe('userProfileRepository', () => {
 
     expect(mockDoc).toHaveBeenCalledWith({}, 'users', 'user-2');
     expect(mockUpdateDoc).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ role: 'owner' }));
+  });
+
+  it('lists users for admin operations', async () => {
+    mockGetDocs.mockResolvedValue({
+      docs: [
+        {
+          data: () => ({
+            createdAt: new Date('2026-01-01T00:00:00.000Z'),
+            displayName: 'Admin',
+            email: 'admin@example.com',
+            phone: null,
+            photoURL: null,
+            role: 'admin',
+            uid: 'admin-1',
+            updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+          }),
+        },
+      ],
+    });
+
+    const users = await listUsers({} as never);
+
+    expect(mockCollection).toHaveBeenCalledWith({}, 'users');
+    expect(users).toHaveLength(1);
+    expect(users[0].role).toBe('admin');
+  });
+
+  it('updates user roles from admin tools', async () => {
+    await updateUserRole('user-2', 'barber', {} as never);
+
+    expect(mockDoc).toHaveBeenCalledWith({}, 'users', 'user-2');
+    expect(mockUpdateDoc).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ role: 'barber' }));
   });
 });
