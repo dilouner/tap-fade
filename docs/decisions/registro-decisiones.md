@@ -51,3 +51,14 @@
   fotos reales, CTAs claros e iconografia reconocible.
 - Consecuencia: La carga/subida de archivos queda fuera de esta iteracion; las
   imagenes se persistiran como URL y se validaran con estados fallback.
+
+## ADR-006 - Primer admin manual
+
+- Estado: Aprobada.
+- Fecha: 2026-07-13.
+- Decision: El primer usuario administrador se asignara directamente en
+  Firestore actualizando `users/{uid}.role` a `admin`.
+- Motivo: Evitar un flujo publico que permita elevar privilegios antes de
+  tener controles administrativos y auditoria.
+- Consecuencia: La app permite operar administracion solo despues de que exista
+  al menos un perfil con rol `admin`.

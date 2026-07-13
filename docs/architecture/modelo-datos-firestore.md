@@ -31,8 +31,9 @@ reports/{reportId}
 - El primer inicio con Google crea el perfil con `role: client`.
 - Inicios posteriores conservan el rol existente y actualizan datos basicos de
   Google como `displayName`, `email`, `phone` y `photoURL`.
-- El rol solo debe cambiarse por flujos administrativos futuros, no por el
-  login del cliente.
+- El rol puede cambiarlo un usuario `admin` desde las vistas administrativas.
+- El primer `admin` debe asignarse manualmente en Firestore.
+- Crear una barberia promueve al usuario autenticado de `client` a `owner`.
 
 ## barberShops
 
@@ -59,6 +60,7 @@ reports/{reportId}
 
 - `userId`
 - `displayName`
+- `photoUrl`
 - `specialties`
 - `active`
 - `createdAt`
@@ -101,3 +103,5 @@ reports/{reportId}
 - Cancelacion o reagendado por cliente solo aplica con al menos 1 hora de
   anticipacion.
 - Los solapes se validan en el repositorio de citas antes de crear o editar.
+- Solo usuarios `admin` pueden listar usuarios globalmente, cambiar roles y
+  operar barberias/citas fuera de su propiedad.
