@@ -11,6 +11,8 @@ jest.mock('firebase/firestore', () => ({
   doc: (db: unknown, collection: string, id: string) => mockDoc(db, collection, id),
   getDoc: (ref: unknown) => mockGetDoc(ref),
   getDocs: (ref: unknown) => mockGetDocs(ref),
+  limit: jest.fn(),
+  query: jest.fn((ref: unknown) => ref),
   setDoc: (ref: unknown, data: unknown, options?: unknown) => mockSetDoc(ref, data, options),
   updateDoc: (ref: unknown, data: unknown) => mockUpdateDoc(ref, data),
 }));
@@ -73,7 +75,11 @@ describe('userProfileRepository', () => {
   });
 
   it('promotes a user to owner after creating a barber shop', async () => {
-    await promoteUserToOwner('user-2', {} as never);
+    mockGetDoc.mockResolvedValue({
+      data: () => ({ createdAt: new Date(), displayName: 'User', email: 'user@example.com', phone: null, photoURL: null, role: 'client', roles: ['client'], uid: 'user-2', updatedAt: new Date() }),
+      exists: () => true,
+    });
+    await promoteUserToOwner('user-2', 'shop-1', {} as never);
 
     expect(mockDoc).toHaveBeenCalledWith({}, 'users', 'user-2');
     expect(mockUpdateDoc).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ role: 'owner' }));
@@ -105,6 +111,10 @@ describe('userProfileRepository', () => {
   });
 
   it('updates user roles from admin tools', async () => {
+    mockGetDoc.mockResolvedValue({
+      data: () => ({ createdAt: new Date(), displayName: 'User', email: 'user@example.com', phone: null, photoURL: null, role: 'client', roles: ['client'], uid: 'user-2', updatedAt: new Date() }),
+      exists: () => true,
+    });
     await updateUserRole('user-2', 'barber', {} as never);
 
     expect(mockDoc).toHaveBeenCalledWith({}, 'users', 'user-2');

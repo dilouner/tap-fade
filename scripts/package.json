@@ -1,0 +1,10 @@
+{
+  "name": "tapfade-maintenance",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase": "^12.15.0",
+    "firebase-admin": "^13.4.0"
+  }
+}

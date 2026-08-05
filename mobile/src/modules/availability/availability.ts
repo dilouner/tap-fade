@@ -21,10 +21,12 @@ export function createAvailabilityBlock(
     barberId: input.barberId,
     barberShopId: input.barberShopId,
     blocked: input.blocked ?? false,
+    date: input.date ?? null,
     createdAt,
     dayOfWeek: input.dayOfWeek,
     endTime: input.endTime,
     id,
+    kind: input.kind ?? 'weekly',
     reason: input.reason?.trim() || null,
     startTime: input.startTime,
     updatedAt: createdAt,
@@ -39,6 +41,7 @@ export function isValidAvailability(input: AvailabilityInput) {
     input.dayOfWeek <= 6 &&
     isQuarterHour(input.startTime) &&
     isQuarterHour(input.endTime) &&
-    timeToMinutes(input.startTime) < timeToMinutes(input.endTime)
+    timeToMinutes(input.startTime) < timeToMinutes(input.endTime) &&
+    (input.kind !== 'exception' || /^\d{4}-\d{2}-\d{2}$/.test(input.date ?? ''))
   );
 }

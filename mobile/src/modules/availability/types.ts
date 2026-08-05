@@ -8,6 +8,8 @@ export type AvailabilityBlock = {
   startTime: string;
   endTime: string;
   blocked: boolean;
+  kind: 'weekly' | 'exception';
+  date: string | null;
   reason: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -20,5 +22,7 @@ export type AvailabilityInput = {
   startTime: string;
   endTime: string;
   blocked?: boolean;
+  kind?: 'weekly' | 'exception';
+  date?: string | null;
   reason?: string | null;
 };

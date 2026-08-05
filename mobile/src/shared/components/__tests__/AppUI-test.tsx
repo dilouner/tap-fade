@@ -22,7 +22,7 @@ describe('AppUI components', () => {
 
     expect(getByText('Corte clasico')).toBeTruthy();
     expect(getByText('Alex')).toBeTruthy();
-    expect(getByText('pending')).toBeTruthy();
+    expect(getByText('Pendiente')).toBeTruthy();
   });
 
   it('notifies when a time slot is selected', async () => {
@@ -37,6 +37,6 @@ describe('AppUI components', () => {
   it('renders status pills for appointment state', async () => {
     const { getByText } = await render(<StatusPill status="confirmed" />);
 
-    expect(getByText('confirmed')).toBeTruthy();
+    expect(getByText('Confirmada')).toBeTruthy();
   });
 });

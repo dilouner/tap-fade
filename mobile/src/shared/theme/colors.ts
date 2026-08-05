@@ -13,6 +13,10 @@ export const colors = {
   warning: '#D97706',
   danger: '#B42318',
   shadow: 'rgba(17, 21, 28, 0.10)',
+  shadowStrong: 'rgba(7, 10, 15, 0.22)',
+  surfaceElevated: '#FBFCFC',
+  surfaceMuted: '#EEF2F3',
+  info: '#2563EB',
   mintGlow: 'rgba(111, 227, 183, 0.18)',
   blueGlow: 'rgba(10, 73, 255, 0.14)',
 } as const;

@@ -14,6 +14,9 @@ export function createAppointment(input: AppointmentInput, id = `appointment-${D
     createdAt,
     endAt: addMinutes(input.startAt, input.durationSnapshot),
     id,
+    rescheduleRequest: null,
+    revision: 1,
+    slotIds: [],
     status: 'pending',
     updatedAt: createdAt,
   };
@@ -48,4 +51,15 @@ export function canTransitionAppointment(current: AppointmentStatus, next: Appoi
   };
 
   return transitions[current].includes(next);
+}
+
+export function isQuarterHourDate(value: Date) {
+  return value.getSeconds() === 0 && value.getMilliseconds() === 0 && value.getMinutes() % 15 === 0;
+}
+
+export function assertAppointmentWindow(startAt: Date, now = new Date()) {
+  if (!isQuarterHourDate(startAt)) throw new Error('El horario debe iniciar en un intervalo de 15 minutos.');
+  if (startAt < addMinutes(now, 60) || startAt > addMinutes(now, 60 * 24 * 60)) {
+    throw new Error('Reserva entre una hora y 60 días de anticipación.');
+  }
 }

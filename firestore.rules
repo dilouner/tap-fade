@@ -2,119 +2,321 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId} {
-      allow create: if isOwner(userId)
-        && request.resource.data.uid == userId
-        && request.resource.data.role == 'client';
-
-      allow read: if isOwner(userId) || isAdmin();
-
-      allow update: if isOwner(userId)
-        && request.resource.data.uid == resource.data.uid
-        && (
-          request.resource.data.role == resource.data.role ||
-          (resource.data.role == 'client' && request.resource.data.role == 'owner')
-        )
-        || (
-          isAdmin()
-          && request.resource.data.uid == resource.data.uid
-          && request.resource.data.role in ['client', 'barber', 'owner', 'admin']
-        );
+    function signedIn() { return request.auth != null; }
+    function own(uid) { return signedIn() && request.auth.uid == uid; }
+    function userPath(uid) { return /databases/$(database)/documents/users/$(uid); }
+    function shopPath(shopId) { return /databases/$(database)/documents/barberShops/$(shopId); }
+    function memberPath(shopId, uid) { return /databases/$(database)/documents/barberShops/$(shopId)/members/$(uid); }
+    function barberPath(shopId, barberId) { return /databases/$(database)/documents/barberShops/$(shopId)/barbers/$(barberId); }
+    function servicePath(shopId, serviceId) { return /databases/$(database)/documents/barberShops/$(shopId)/services/$(serviceId); }
+    function appointmentPath(id) { return /databases/$(database)/documents/appointments/$(id); }
+    function slotPath(id) { return /databases/$(database)/documents/appointmentSlots/$(id); }
+    function auditPath(id) { return /databases/$(database)/documents/adminAudit/$(id); }
+    function roles(uid) {
+      return exists(userPath(uid))
+        ? (get(userPath(uid)).data.roles is list ? get(userPath(uid)).data.roles : [get(userPath(uid)).data.role])
+        : [];
+    }
+    function admin() { return signedIn() && 'admin' in roles(request.auth.uid); }
+    function activeShop(shopId) { return exists(shopPath(shopId)) && get(shopPath(shopId)).data.status == 'active'; }
+    function shopOwner(shopId) { return signedIn() && exists(shopPath(shopId)) && get(shopPath(shopId)).data.ownerId == request.auth.uid; }
+    function activeMember(shopId) { return signedIn() && exists(memberPath(shopId, request.auth.uid)) && get(memberPath(shopId, request.auth.uid)).data.active == true; }
+    function assignedBarber(shopId, barberId) {
+      return signedIn() && exists(barberPath(shopId, barberId)) && get(barberPath(shopId, barberId)).data.userId == request.auth.uid;
+    }
+    function operator(shopId, barberId) { return admin() || shopOwner(shopId) || assignedBarber(shopId, barberId); }
+    function validRoles(value) {
+      return value is list && value.size() >= 1 && value.size() <= 4 && 'client' in value
+        && value.hasOnly(['client', 'barber', 'owner', 'admin']);
+    }
+    function validAudit(id, action, targetId) {
+      return id is string && existsAfter(auditPath(id))
+        && getAfter(auditPath(id)).data.actorId == request.auth.uid
+        && getAfter(auditPath(id)).data.action == action
+        && getAfter(auditPath(id)).data.targetId == targetId;
     }
 
-    match /barberShops/{barberShopId} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.status == 'active');
+    match /users/{userId} {
+      allow create: if own(userId) && request.resource.data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'roles', 'createdAt', 'updatedAt'])
+        && request.resource.data.uid == userId && request.resource.data.role == 'client' && request.resource.data.roles == ['client'];
+      allow read: if own(userId) || admin();
+      allow update: if request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validRoles(request.resource.data.roles)
+        && (
+          (own(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'phone', 'photoURL', 'updatedAt']))
+          || ownerOnboarding(userId)
+          || barberOnboarding(userId)
+          || (admin() && validAudit(request.resource.data.lastAuditId, 'update_user_roles', userId))
+        );
+      allow delete: if own(userId);
 
-      allow create: if isSignedIn()
-        && request.resource.data.ownerId == request.auth.uid
-        && request.resource.data.status == 'active';
+      match /notifications/{notificationId} {
+        allow read: if own(userId) || admin();
+        allow update: if own(userId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
+        allow delete: if own(userId);
+        allow create: if validNotification(notificationId, userId);
+      }
+    }
 
-      allow update: if (isShopOwner(barberShopId) || isAdmin())
-        && request.resource.data.ownerId == resource.data.ownerId;
+    function ownerOnboarding(userId) {
+      return own(userId)
+        && (!('ownerShopId' in resource.data) || resource.data.ownerShopId == null)
+        && request.resource.data.ownerShopId is string
+        && getAfter(shopPath(request.resource.data.ownerShopId)).data.ownerId == userId
+        && getAfter(memberPath(request.resource.data.ownerShopId, userId)).data.role == 'owner'
+        && request.resource.data.roles.hasAll(resource.data.roles)
+        && request.resource.data.roles.hasOnly(resource.data.roles.concat(['owner', 'barber']))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ownerShopId', 'barberShopId', 'role', 'roles', 'updatedAt']);
+    }
+    function barberOnboarding(userId) {
+      return own(userId) && request.resource.data.barberShopId is string
+        && getAfter(memberPath(request.resource.data.barberShopId, userId)).data.role in ['barber', 'owner']
+        && getAfter(memberPath(request.resource.data.barberShopId, userId)).data.active == true
+        && request.resource.data.roles.hasAll(resource.data.roles)
+        && request.resource.data.roles.hasOnly(resource.data.roles.concat(['barber']))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['barberShopId', 'role', 'roles', 'updatedAt']);
+    }
+
+    match /barberShops/{shopId} {
+      allow read: if resource.data.status == 'active' || shopOwner(shopId) || activeMember(shopId) || admin();
+      allow create: if signedIn() && validShop(request.resource.data, shopId)
+        && request.resource.data.ownerId == request.auth.uid && request.resource.data.status == 'active'
+        && getAfter(userPath(request.auth.uid)).data.ownerShopId == shopId
+        && getAfter(memberPath(shopId, request.auth.uid)).data.role == 'owner';
+      allow update: if validShop(request.resource.data, shopId)
+        && request.resource.data.ownerId == resource.data.ownerId
+        && (
+          (shopOwner(shopId)
+            && resource.data.status != 'suspended'
+            && request.resource.data.status in ['active', 'paused']
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'description', 'address', 'photoUrl', 'location', 'timezone', 'status', 'updatedAt']))
+          || (admin() && validAudit(request.resource.data.lastAuditId, 'update_shop_status', shopId))
+        );
 
       match /services/{serviceId} {
-        allow read: if isAdmin() || (isSignedIn() && isActiveShop(barberShopId));
-        allow create, update: if isShopOwner(barberShopId) || isAdmin();
+        allow read: if activeShop(shopId) || shopOwner(shopId) || activeMember(shopId) || admin();
+        allow create: if (admin() || getAfter(shopPath(shopId)).data.ownerId == request.auth.uid) && validService(request.resource.data, shopId, serviceId);
+        allow update: if (shopOwner(shopId) || admin()) && validService(request.resource.data, shopId, serviceId);
+        allow delete: if shopOwner(shopId) || admin();
       }
-
       match /barbers/{barberId} {
-        allow read: if isAdmin() || (isSignedIn() && isActiveShop(barberShopId));
-        allow create, update: if isShopOwner(barberShopId) || isAdmin();
+        allow read: if activeShop(shopId) || shopOwner(shopId) || activeMember(shopId) || admin();
+        allow create: if (admin() || getAfter(shopPath(shopId)).data.ownerId == request.auth.uid) && validBarber(request.resource.data, shopId, barberId);
+        allow update: if validBarber(request.resource.data, shopId, barberId) && (
+          shopOwner(shopId) || admin()
+          || (own(request.resource.data.userId) && getAfter(memberPath(shopId, request.auth.uid)).data.barberId == barberId)
+        );
+        allow delete: if shopOwner(shopId) || admin();
       }
+      match /availability/{blockId} {
+        allow read: if signedIn() && (activeShop(shopId) || shopOwner(shopId) || activeMember(shopId) || admin());
+        allow create: if validAvailability(request.resource.data, shopId, blockId) && (
+          admin() || getAfter(shopPath(shopId)).data.ownerId == request.auth.uid
+          || assignedBarber(shopId, request.resource.data.barberId)
+          || (activeMember(shopId) && request.resource.data.barberId == get(memberPath(shopId, request.auth.uid)).data.barberId)
+        );
+        allow update: if validAvailability(request.resource.data, shopId, blockId) && (
+          shopOwner(shopId) || admin() || assignedBarber(shopId, request.resource.data.barberId)
+          || (activeMember(shopId) && request.resource.data.barberId == get(memberPath(shopId, request.auth.uid)).data.barberId)
+        );
+        allow delete: if shopOwner(shopId) || admin() || assignedBarber(shopId, resource.data.barberId)
+          || (activeMember(shopId) && resource.data.barberId == get(memberPath(shopId, request.auth.uid)).data.barberId);
+      }
+      match /members/{userId} {
+        allow read: if own(userId) || shopOwner(shopId) || admin();
+        allow create: if validMember(request.resource.data, shopId, userId) && (
+          admin() || getAfter(shopPath(shopId)).data.ownerId == request.auth.uid
+          || (own(userId) && request.resource.data.role == 'barber' && validInviteMember(request.resource.data, shopId, userId))
+        );
+        allow update: if (shopOwner(shopId) || admin()) && validMember(request.resource.data, shopId, userId);
+      }
+    }
 
-      match /availability/{availabilityId} {
-        allow read: if isAdmin() || (isSignedIn() && isActiveShop(barberShopId));
-        allow create, update: if isShopOwner(barberShopId) || isAdmin();
-      }
+    function validShop(data, id) {
+      return data.id == id && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.address is string && data.address.size() >= 4 && data.address.size() <= 300
+        && data.description is string && data.description.size() <= 1000
+        && data.ownerId is string && data.timezone is string
+        && data.status in ['active', 'paused', 'suspended'];
+    }
+    function validService(data, shopId, id) {
+      return data.id == id && data.barberShopId == shopId && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.active is bool && data.price is number && data.price >= 0 && data.price <= 100000
+        && data.durationMinutes is int && data.durationMinutes >= 15 && data.durationMinutes <= 180 && data.durationMinutes % 15 == 0;
+    }
+    function validBarber(data, shopId, id) {
+      return data.id == id && data.barberShopId == shopId && data.displayName is string
+        && data.displayName.size() >= 2 && data.displayName.size() <= 100 && data.active is bool
+        && data.serviceIds is list && data.serviceIds.size() <= 50 && data.specialties is list && data.specialties.size() <= 20;
+    }
+    function validAvailability(data, shopId, id) {
+      return data.id == id && data.barberShopId == shopId && data.barberId is string
+        && data.dayOfWeek is int && data.dayOfWeek >= 0 && data.dayOfWeek <= 6
+        && data.startTime is string && data.startTime.matches('^([01][0-9]|2[0-3]):(00|15|30|45)$')
+        && data.endTime is string && data.endTime.matches('^([01][0-9]|2[0-3]):(00|15|30|45)$')
+        && data.startTime < data.endTime && data.blocked is bool && data.kind in ['weekly', 'exception']
+        && (data.kind == 'weekly' ? data.date == null : data.date is string);
+    }
+    function validMember(data, shopId, uid) {
+      return data.uid == uid && data.barberShopId == shopId && data.role in ['owner', 'barber'] && data.active is bool;
+    }
+    function validInviteMember(data, shopId, uid) {
+      return data.inviteId is string && exists(/databases/$(database)/documents/barberInvites/$(data.inviteId))
+        && get(/databases/$(database)/documents/barberInvites/$(data.inviteId)).data.barberShopId == shopId
+        && get(/databases/$(database)/documents/barberInvites/$(data.inviteId)).data.barberId == data.barberId
+        && getAfter(/databases/$(database)/documents/barberInvites/$(data.inviteId)).data.acceptedBy == uid;
+    }
+
+    match /barberInvites/{inviteId} {
+      allow get: if signedIn();
+      allow list: if admin();
+      allow create: if shopOwner(request.resource.data.barberShopId) && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.codeHash == inviteId && request.resource.data.usedAt == null;
+      allow update: if admin() || (signedIn() && resource.data.usedAt == null && request.time < resource.data.expiresAt
+        && request.resource.data.acceptedBy == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['acceptedBy', 'usedAt'])
+        && getAfter(memberPath(resource.data.barberShopId, request.auth.uid)).data.barberId == resource.data.barberId
+        && getAfter(barberPath(resource.data.barberShopId, resource.data.barberId)).data.userId == request.auth.uid);
     }
 
     match /appointments/{appointmentId} {
-      allow read: if isSignedIn()
+      allow read: if signedIn() && (admin() || resource.data.clientId == request.auth.uid
+        || shopOwner(resource.data.barberShopId) || assignedBarber(resource.data.barberShopId, resource.data.barberId));
+      allow create: if validNewAppointment(request.resource.data, appointmentId) && validSlotSet(request.resource.data, request.resource.data.slotIds, request.resource.data.startAt, 'appointment');
+      allow update: if immutableAppointmentIdentity() && validRevision() && (
+        validClientCancellation() || validRescheduleRequest() || validOperatorTransition() || validRescheduleResolution() || validClientAnonymization()
+      );
+      allow delete: if false;
+    }
+
+    function validNewAppointment(data, id) {
+      let serviceData = get(servicePath(data.barberShopId, data.serviceId)).data;
+      let barberData = get(barberPath(data.barberShopId, data.barberId)).data;
+      return signedIn() && data.id == id && data.clientId == request.auth.uid && data.status == 'pending'
+        && data.revision == 1 && data.rescheduleRequest == null && data.slotIds is list
+        && data.durationSnapshot is int && data.durationSnapshot >= 15 && data.durationSnapshot <= 180 && data.durationSnapshot % 15 == 0
+        && data.slotIds.size() == data.durationSnapshot / 15
+        && data.startAt >= request.time + duration.value(60, 'm') && data.startAt <= request.time + duration.value(60, 'd')
+        && data.endAt == data.startAt + duration.value(data.durationSnapshot, 'm')
+        && activeShop(data.barberShopId)
+        && serviceData.active == true && serviceData.durationMinutes == data.durationSnapshot && serviceData.price == data.priceSnapshot
+        && barberData.active == true && (barberData.serviceIds.size() == 0 || data.serviceId in barberData.serviceIds);
+    }
+    function slotMatches(appointment, ids, startAt, purpose, index) {
+      let lock = getAfter(slotPath(ids[index])).data;
+      return lock.appointmentId == appointment.id && lock.barberId == appointment.barberId
+        && lock.barberShopId == appointment.barberShopId && lock.clientId == appointment.clientId
+        && lock.purpose == purpose && lock.slotAt == startAt + duration.value(index * 15, 'm');
+    }
+    function validSlotSet(appointment, ids, startAt, purpose) {
+      return ids is list && ids.size() >= 1 && ids.size() <= 12
+        && slotMatches(appointment, ids, startAt, purpose, 0)
+        && (ids.size() < 2 || slotMatches(appointment, ids, startAt, purpose, 1))
+        && (ids.size() < 3 || slotMatches(appointment, ids, startAt, purpose, 2))
+        && (ids.size() < 4 || slotMatches(appointment, ids, startAt, purpose, 3))
+        && (ids.size() < 5 || slotMatches(appointment, ids, startAt, purpose, 4))
+        && (ids.size() < 6 || slotMatches(appointment, ids, startAt, purpose, 5))
+        && (ids.size() < 7 || slotMatches(appointment, ids, startAt, purpose, 6))
+        && (ids.size() < 8 || slotMatches(appointment, ids, startAt, purpose, 7))
+        && (ids.size() < 9 || slotMatches(appointment, ids, startAt, purpose, 8))
+        && (ids.size() < 10 || slotMatches(appointment, ids, startAt, purpose, 9))
+        && (ids.size() < 11 || slotMatches(appointment, ids, startAt, purpose, 10))
+        && (ids.size() < 12 || slotMatches(appointment, ids, startAt, purpose, 11));
+    }
+    function immutableAppointmentIdentity() {
+      return request.resource.data.id == resource.data.id && request.resource.data.clientId == resource.data.clientId
+        && request.resource.data.clientName == resource.data.clientName && request.resource.data.barberShopId == resource.data.barberShopId
+        && request.resource.data.barberId == resource.data.barberId && request.resource.data.barberName == resource.data.barberName
+        && request.resource.data.serviceId == resource.data.serviceId && request.resource.data.serviceName == resource.data.serviceName
+        && request.resource.data.durationSnapshot == resource.data.durationSnapshot
+        && request.resource.data.priceSnapshot == resource.data.priceSnapshot && request.resource.data.createdAt == resource.data.createdAt;
+    }
+    function validRevision() { return request.resource.data.revision == resource.data.revision + 1; }
+    function validClientCancellation() {
+      return own(resource.data.clientId) && resource.data.status in ['pending', 'confirmed']
+        && request.resource.data.status == 'cancelled' && request.time <= resource.data.startAt - duration.value(60, 'm')
+        && request.resource.data.rescheduleRequest == null
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'rescheduleRequest', 'revision', 'updatedAt']);
+    }
+    function validRescheduleRequest() {
+      return (own(resource.data.clientId) || operator(resource.data.barberShopId, resource.data.barberId))
+        && resource.data.status in ['pending', 'confirmed'] && request.resource.data.status == resource.data.status
+        && resource.data.rescheduleRequest == null && request.resource.data.rescheduleRequest.requestedBy == request.auth.uid
+        && request.resource.data.rescheduleRequest.startAt >= request.time + duration.value(60, 'm')
+        && request.resource.data.rescheduleRequest.startAt <= request.time + duration.value(60, 'd')
+        && request.resource.data.rescheduleRequest.endAt == request.resource.data.rescheduleRequest.startAt + duration.value(resource.data.durationSnapshot, 'm')
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rescheduleRequest', 'revision', 'updatedAt'])
+        && validSlotSet(resource.data, request.resource.data.rescheduleRequest.slotIds, request.resource.data.rescheduleRequest.startAt, 'reschedule');
+    }
+    function validOperatorTransition() {
+      return operator(resource.data.barberShopId, resource.data.barberId)
+        && request.resource.data.rescheduleRequest == (request.resource.data.status in ['rejected', 'cancelled', 'completed'] ? null : resource.data.rescheduleRequest)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'rescheduleRequest', 'revision', 'updatedAt'])
+        && ((resource.data.status == 'pending' && request.resource.data.status in ['confirmed', 'rejected'])
+          || (resource.data.status == 'confirmed' && request.resource.data.status == 'cancelled')
+          || (resource.data.status == 'confirmed' && request.resource.data.status == 'completed' && request.time >= resource.data.endAt));
+    }
+    function validRescheduleResolution() {
+      return operator(resource.data.barberShopId, resource.data.barberId) && resource.data.rescheduleRequest != null
+        && request.resource.data.status == resource.data.status && request.resource.data.rescheduleRequest == null
         && (
-          isAdmin() ||
-          resource.data.clientId == request.auth.uid ||
-          isShopOwner(resource.data.barberShopId) ||
-          isAssignedBarber(resource.data.barberShopId, resource.data.barberId)
-        );
-
-      allow create: if isSignedIn()
-        && request.resource.data.clientId == request.auth.uid
-        && request.resource.data.status == 'pending'
-        && isActiveShop(request.resource.data.barberShopId);
-
-      allow update: if isSignedIn()
-        && (
-          isAdmin() ||
-          canClientUpdateAppointment() ||
-          canOperatorUpdateAppointment()
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rescheduleRequest', 'revision', 'updatedAt'])
+          || (request.resource.data.startAt == resource.data.rescheduleRequest.startAt
+            && request.resource.data.endAt == resource.data.rescheduleRequest.endAt
+            && request.resource.data.slotIds == resource.data.rescheduleRequest.slotIds
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['startAt', 'endAt', 'slotIds', 'rescheduleRequest', 'revision', 'updatedAt']))
         );
     }
-
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
+    function validClientAnonymization() {
+      return own(resource.data.clientId) && request.resource.data.clientName == 'Usuario eliminado'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clientName', 'revision', 'updatedAt']);
     }
 
-    function isSignedIn() {
-      return request.auth != null;
+    match /appointmentSlots/{slotId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && !exists(slotPath(slotId)) && validSlotDocument(request.resource.data)
+        && (slotId in getAfter(appointmentPath(request.resource.data.appointmentId)).data.slotIds
+          || (getAfter(appointmentPath(request.resource.data.appointmentId)).data.rescheduleRequest != null
+            && slotId in getAfter(appointmentPath(request.resource.data.appointmentId)).data.rescheduleRequest.slotIds));
+      allow update: if false;
+      allow delete: if signedIn() && (operator(resource.data.barberShopId, resource.data.barberId) || (
+        own(resource.data.clientId) && existsAfter(appointmentPath(resource.data.appointmentId))
+        && (getAfter(appointmentPath(resource.data.appointmentId)).data.status in ['rejected', 'cancelled', 'completed']
+          || (!(slotId in getAfter(appointmentPath(resource.data.appointmentId)).data.slotIds)
+            && (getAfter(appointmentPath(resource.data.appointmentId)).data.rescheduleRequest == null
+              || !(slotId in getAfter(appointmentPath(resource.data.appointmentId)).data.rescheduleRequest.slotIds))))
+      ));
+    }
+    function validSlotDocument(data) {
+      return data.appointmentId is string && data.barberId is string && data.barberShopId is string
+        && data.clientId == getAfter(appointmentPath(data.appointmentId)).data.clientId
+        && data.purpose in ['appointment', 'reschedule'] && data.slotAt is timestamp
+        && (own(data.clientId) || operator(data.barberShopId, data.barberId));
     }
 
-    function isAdmin() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    function validNotification(id, userId) {
+      return signedIn() && request.resource.data.id == id && request.resource.data.recipientId == userId
+        && request.resource.data.actorId == request.auth.uid && request.resource.data.title is string
+        && request.resource.data.title.size() <= 100 && request.resource.data.body is string && request.resource.data.body.size() <= 500
+        && request.resource.data.appointmentId is string && existsAfter(appointmentPath(request.resource.data.appointmentId))
+        && notificationParticipant(request.resource.data.appointmentId)
+        && validNotificationRecipient(request.resource.data.appointmentId, userId);
+    }
+    function notificationParticipant(id) {
+      return getAfter(appointmentPath(id)).data.clientId == request.auth.uid
+        || operator(getAfter(appointmentPath(id)).data.barberShopId, getAfter(appointmentPath(id)).data.barberId);
+    }
+    function validNotificationRecipient(id, uid) {
+      return getAfter(appointmentPath(id)).data.clientId == uid
+        || get(shopPath(getAfter(appointmentPath(id)).data.barberShopId)).data.ownerId == uid
+        || get(barberPath(getAfter(appointmentPath(id)).data.barberShopId, getAfter(appointmentPath(id)).data.barberId)).data.userId == uid;
     }
 
-    function shopPath(barberShopId) {
-      return /databases/$(database)/documents/barberShops/$(barberShopId);
-    }
-
-    function isActiveShop(barberShopId) {
-      return exists(shopPath(barberShopId)) && get(shopPath(barberShopId)).data.status == 'active';
-    }
-
-    function isShopOwner(barberShopId) {
-      return isSignedIn()
-        && exists(shopPath(barberShopId))
-        && get(shopPath(barberShopId)).data.ownerId == request.auth.uid;
-    }
-
-    function isAssignedBarber(barberShopId, barberId) {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/barberShops/$(barberShopId)/barbers/$(barberId))
-        && get(/databases/$(database)/documents/barberShops/$(barberShopId)/barbers/$(barberId)).data.userId == request.auth.uid;
-    }
-
-    function canClientUpdateAppointment() {
-      return resource.data.clientId == request.auth.uid
-        && request.resource.data.clientId == resource.data.clientId
-        && request.resource.data.status in ['pending', 'cancelled']
-        && resource.data.status in ['pending', 'confirmed'];
-    }
-
-    function canOperatorUpdateAppointment() {
-      return (isShopOwner(resource.data.barberShopId) || isAssignedBarber(resource.data.barberShopId, resource.data.barberId))
-        && request.resource.data.barberShopId == resource.data.barberShopId
-        && request.resource.data.status in ['confirmed', 'rejected', 'cancelled', 'completed'];
+    match /adminAudit/{auditId} {
+      allow read: if admin();
+      allow create: if admin() && request.resource.data.actorId == request.auth.uid && request.resource.data.id == auditId
+        && request.resource.data.action in ['update_shop_status', 'update_user_roles'] && request.resource.data.targetId is string;
     }
   }
 }

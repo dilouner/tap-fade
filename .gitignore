@@ -1,0 +1,15 @@
+scripts/node_modules/
+scripts/backups/
+scripts/scripts/backups/
+firestore-debug.log
+migration-backups/
+
+# One-off local administration tools. They target demo data directly and are
+# intentionally excluded from application source control.
+scripts/inspect-appointments.mjs
+scripts/inspect-owner.mjs
+scripts/inspect-scheduling.mjs
+scripts/list-profiles.mjs
+scripts/migrate-public-v1.mjs
+scripts/repair-alex-availability.mjs
+scripts/reset-auth-passwords.mjs
