@@ -4,7 +4,7 @@ export type RootStackParamList = {
   Notifications: undefined;
   Profile: undefined;
   ShopDetail: { shopId: string };
-  Booking: { shopId: string };
+  Booking: { shopId: string; serviceId?: string };
   AppointmentDetail: { appointmentId: string; source: 'client' | 'operator' | 'admin' };
   ProfileEdit: undefined;
   BusinessEdit: undefined;

@@ -107,7 +107,7 @@ export function ShopDetailScreen({ navigation, route }: NativeStackScreenProps<R
     return () => { active = false; };
   }, [shop]);
   if (!shop) return <Screen title="Barbería"><EmptyState message="Este negocio ya no está disponible." title="No encontrado" /></Screen>;
-  return <Screen eyebrow="Barbería" title={shop.name}><PremiumHero eyebrow="TapFade verificado" subtitle={shop.description || 'Servicio profesional y agenda clara.'} title={shop.address} />{detailLoading ? <LoadingState label="Cargando servicios y equipo…" /> : detailError ? <Banner message={detailError} tone="danger" /> : <><View style={styles.stats}><Stat icon="cut-outline" label="Servicios" value={String(services.length)} /><Stat icon="people-outline" label="Barberos" value={String(barbers.length)} /></View><SectionHeader title="Servicios" />{services.slice(0, 4).map((service) => <ServiceCard duration={service.durationMinutes} key={service.id} name={service.name} price={service.price} />)}<SectionHeader title="Equipo" />{barbers.slice(0, 4).map((barber) => <BarberCard key={barber.id} name={barber.displayName} specialties={barber.specialties} />)}</>}<PrimaryButton disabled={detailLoading || Boolean(detailError)} label={profile ? 'Solicitar una cita' : 'Inicia sesión para reservar'} onPress={() => profile ? navigation.navigate('Booking', { shopId: shop.id }) : navigation.navigate('Auth')} /></Screen>;
+  return <Screen eyebrow="Barbería" title={shop.name}><PremiumHero eyebrow="TapFade verificado" subtitle={shop.description || 'Servicio profesional y agenda clara.'} title={shop.address} />{detailLoading ? <LoadingState label="Cargando servicios y equipo…" /> : detailError ? <Banner message={detailError} tone="danger" /> : <><View style={styles.stats}><Stat icon="cut-outline" label="Servicios" value={String(services.length)} /><Stat icon="people-outline" label="Barberos" value={String(barbers.length)} /></View><SectionHeader title="Servicios" />{services.slice(0, 4).map((service) => <ServiceCard duration={service.durationMinutes} key={service.id} name={service.name} onPress={() => profile ? navigation.navigate('Booking', { serviceId: service.id, shopId: shop.id }) : navigation.navigate('Auth')} price={service.price} />)}<SectionHeader title="Equipo" />{barbers.slice(0, 4).map((barber) => <BarberCard key={barber.id} name={barber.displayName} specialties={barber.specialties} />)}</>}<PrimaryButton disabled={detailLoading || Boolean(detailError)} label={profile ? 'Solicitar una cita' : 'Inicia sesión para reservar'} onPress={() => profile ? navigation.navigate('Booking', { shopId: shop.id }) : navigation.navigate('Auth')} /></Screen>;
 }
 
 export function BookingScreen({ navigation, route }: NativeStackScreenProps<RootStackParamList, 'Booking'>) {
@@ -137,12 +137,14 @@ export function BookingScreen({ navigation, route }: NativeStackScreenProps<Root
     })
       .then(([nextServices, nextBarbers, nextAvailability]) => {
         if (!active) return;
-        setServices(nextServices.filter((item) => item.active)); setBarbers(nextBarbers.filter((item) => item.active)); setAvailability(nextAvailability);
+        const activeServices = nextServices.filter((item) => item.active);
+        setServices(activeServices); setBarbers(nextBarbers.filter((item) => item.active)); setAvailability(nextAvailability);
+        if (route.params.serviceId) setService(activeServices.find((item) => item.id === route.params.serviceId) ?? null);
       })
       .catch(() => { if (active) setCatalogError('No pudimos preparar esta reserva. Revisa tu conexión e intenta de nuevo.'); })
       .finally(() => { if (active) setCatalogLoading(false); });
     return () => { active = false; };
-  }, [shop]);
+  }, [route.params.serviceId, shop]);
   useEffect(() => {
     let active = true;
     if (!shop || !barber) return () => { active = false; };
