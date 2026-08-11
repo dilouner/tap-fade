@@ -27,18 +27,18 @@ type RootNavigation = NativeStackNavigationProp<RootStackParamList>;
 
 export function ClientHomeScreen() {
   const navigation = useNavigation<RootNavigation>();
-  const { data, loading, profile, refresh } = useAppData();
+  const { data, loading, profile, refresh, refreshing } = useAppData();
   const upcoming = [...data.clientAppointments]
     .filter((item) => ['pending', 'confirmed'].includes(item.status) && item.startAt > new Date())
     .sort((left, right) => left.startAt.getTime() - right.startAt.getTime())[0];
   if (loading) return <LoadingState />;
   return (
-    <Screen eyebrow="TapFade" onRefresh={() => void refresh()} refreshing={loading} title={profile ? `Hola, ${profile.displayName.split(' ')[0] || 'bienvenido'}` : 'Tu próximo corte, sin llamadas'}>
+    <Screen eyebrow="TapFade" onRefresh={() => void refresh()} refreshing={refreshing} title={profile ? `Hola, ${profile.displayName.split(' ')[0] || 'bienvenido'}` : 'Tu próximo corte, sin llamadas'}>
       <PremiumHero action={<PrimaryButton disabled={!data.shops[0]} label={data.shops[0] ? 'Ver barbería destacada' : 'Sin barberías disponibles'} onPress={() => data.shops[0] && navigation.navigate('ShopDetail', { shopId: data.shops[0].id })} variant="secondary" />} eyebrow="Reserva local" subtitle="Descubre profesionales cerca, revisa sus servicios y solicita un horario disponible." title="Haz espacio para verte bien." />
       {upcoming ? <><SectionHeader subtitle="Tu cita más cercana" title="Próxima visita" /><AppointmentCard client={upcoming.barberName} date={upcoming.startAt.toLocaleString('es-MX')} onPress={() => navigation.navigate('AppointmentDetail', { appointmentId: upcoming.id, source: 'client' })} service={upcoming.serviceName} status={upcoming.status} /></> : <EmptyState icon="calendar-outline" message="Explora negocios activos y solicita tu primer horario." title={profile ? 'Aún no tienes citas' : 'Explora antes de registrarte'} />}
       {profile && data.favoriteShopIds.length ? <><SectionHeader subtitle="Tus lugares guardados" title="Favoritos" />{data.shops.filter((shop) => data.favoriteShopIds.includes(shop.id)).slice(0, 2).map((shop) => <ShopCard address={shop.address} image={resolveShopImage(shop)} key={shop.id} meta="Guardado en favoritos" name={shop.name} onPress={() => navigation.navigate('ShopDetail', { shopId: shop.id })} />)}</> : null}
       <SectionHeader subtitle="Selección TapFade" title="Destacadas" />
-      {data.shops.slice(0, 2).map((shop) => <ShopCard address={shop.address} image={resolveShopImage(shop)} key={shop.id} meta="Abierto hoy · Reserva en minutos" name={shop.name} onPress={() => navigation.navigate('ShopDetail', { shopId: shop.id })} />)}
+      {data.shops.slice(0, 2).map((shop) => <ShopCard address={shop.address} image={resolveShopImage(shop)} key={shop.id} meta="Consulta horarios disponibles" name={shop.name} onPress={() => navigation.navigate('ShopDetail', { shopId: shop.id })} />)}
       <View style={styles.stats}><Stat icon="business-outline" label="Barberías activas" value={String(data.shops.length)} /><Stat icon="calendar-outline" label="Tus citas" value={String(data.clientAppointments.length)} /></View>
     </Screen>
   );
@@ -46,7 +46,7 @@ export function ClientHomeScreen() {
 
 export function ExploreScreen() {
   const navigation = useNavigation<RootNavigation>();
-  const { data, error, loading, online, profile, refresh } = useAppData();
+  const { data, error, loading, online, profile, refresh, refreshing } = useAppData();
   const [query, setQuery] = useState('');
   const [nearby, setNearby] = useState<NearbyShop[] | null>(null);
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
@@ -73,13 +73,13 @@ export function ExploreScreen() {
   }, [data.shops, nearby, query]);
   if (loading) return <LoadingState />;
   return (
-    <Screen eyebrow="Explorar" onRefresh={() => void refresh()} refreshing={loading} title="Encuentra tu lugar">
+    <Screen eyebrow="Explorar" onRefresh={() => void refresh()} refreshing={refreshing} title="Encuentra tu lugar">
       {!online ? <Banner message="Estás sin conexión. Mostramos la información guardada en el dispositivo." /> : null}
       <Field label="Buscar barbería o zona" onChangeText={setQuery} placeholder="Nombre, colonia o ciudad" value={query} />
       <PrimaryButton icon="location-outline" label={nearby ? 'Ordenadas por distancia' : 'Ver cercanas a mí'} onPress={() => void requestLocation()} variant="secondary" />
       {locationMessage ? <Banner message={locationMessage} /> : null}{error ? <Banner message={error} tone="danger" /> : null}
       <SectionHeader subtitle={`${shops.length} resultados`} title="Barberías" />
-      {shops.length === 0 ? <EmptyState icon="search-outline" message="Prueba otra zona o revisa más tarde." title="Sin resultados" /> : shops.map((shop) => <View key={shop.id} style={styles.cardWrap}><ShopCard address={`${shop.address}${shop.distanceKm !== null ? ` · ${shop.distanceKm.toFixed(1)} km` : ''}`} image={resolveShopImage(shop)} meta="Agenda disponible · Reserva en minutos" name={shop.name} onPress={() => navigation.navigate('ShopDetail', { shopId: shop.id })} /><Pressable accessibilityLabel={data.favoriteShopIds.includes(shop.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'} accessibilityRole="button" onPress={() => void toggleFavorite(shop.id)} style={styles.favoriteButton}><Ionicons color={data.favoriteShopIds.includes(shop.id) ? colors.danger : colors.graphite} name={data.favoriteShopIds.includes(shop.id) ? 'heart' : 'heart-outline'} size={22} /></Pressable></View>)}
+      {shops.length === 0 ? <EmptyState icon="search-outline" message="Prueba otra zona o revisa más tarde." title="Sin resultados" /> : shops.map((shop) => <View key={shop.id} style={styles.cardWrap}><ShopCard address={`${shop.address}${shop.distanceKm !== null ? ` · ${shop.distanceKm.toFixed(1)} km` : ''}`} image={resolveShopImage(shop)} meta="Consulta disponibilidad en tiempo real" name={shop.name} onPress={() => navigation.navigate('ShopDetail', { shopId: shop.id })} /><Pressable accessibilityLabel={data.favoriteShopIds.includes(shop.id) ? 'Quitar de favoritos' : 'Agregar a favoritos'} accessibilityRole="button" onPress={() => void toggleFavorite(shop.id)} style={styles.favoriteButton}><Ionicons color={data.favoriteShopIds.includes(shop.id) ? colors.danger : colors.graphite} name={data.favoriteShopIds.includes(shop.id) ? 'heart' : 'heart-outline'} size={22} /></Pressable></View>)}
     </Screen>
   );
 }

@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import NetInfo from '@react-native-community/netinfo';
 
 import { listAllAppointments, listBarberAppointments, listClientAppointments, listShopAppointments, subscribeBarberAppointments, subscribeClientAppointments, subscribeShopAppointments } from '../modules/appointments/appointmentRepository';
@@ -38,6 +38,7 @@ type AppContextValue = {
   mode: AppMode;
   profile: UserProfile | null;
   refresh: () => Promise<void>;
+  refreshing: boolean;
   setMode: (mode: AppMode) => void;
   unreadNotifications: number;
 };
@@ -62,6 +63,9 @@ export function AppDataProvider({ children, profile }: { children: ReactNode; pr
   const [selectedMode, setModeState] = useState<AppMode>('client');
   const [data, setData] = useState<AppData>(emptyData);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const initialized = useRef(false);
+  const activeProfileUid = useRef<string | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [online, setOnline] = useState(true);
 
@@ -74,7 +78,26 @@ export function AppDataProvider({ children, profile }: { children: ReactNode; pr
   }, [availableModes]);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
+    const nextProfileUid = profile?.uid ?? null;
+    if (activeProfileUid.current !== nextProfileUid) {
+      activeProfileUid.current = nextProfileUid;
+      initialized.current = false;
+      setData((current) => ({
+        ...current,
+        activeBarber: null,
+        activeShop: null,
+        appointments: [],
+        availability: [],
+        barbers: [],
+        clientAppointments: [],
+        favoriteShopIds: [],
+        notifications: [],
+        services: [],
+        users: [],
+      }));
+    }
+    if (initialized.current) setRefreshing(true);
+    else setLoading(true);
     setError(null);
     const failures: string[] = [];
     async function safely<T>(operation: Promise<T>, fallback: T, label: string): Promise<T> {
@@ -131,7 +154,9 @@ export function AppDataProvider({ children, profile }: { children: ReactNode; pr
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible actualizar TapFade.');
     } finally {
+      initialized.current = true;
       setLoading(false);
+      setRefreshing(false);
     }
   }, [mode, profile]);
 
@@ -169,7 +194,7 @@ export function AppDataProvider({ children, profile }: { children: ReactNode; pr
   }, [data.clientAppointments, profile]);
 
   const unreadNotifications = useMemo(() => data.notifications.filter((item) => !item.readAt).length, [data.notifications]);
-  const value = useMemo(() => ({ data, error, loading, mode, online, profile, refresh, setMode, unreadNotifications }), [data, error, loading, mode, online, profile, refresh, setMode, unreadNotifications]);
+  const value = useMemo(() => ({ data, error, loading, mode, online, profile, refresh, refreshing, setMode, unreadNotifications }), [data, error, loading, mode, online, profile, refresh, refreshing, setMode, unreadNotifications]);
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { addHours, setHours, setMinutes } from 'date-fns';
+import { addDays, addHours, setHours, setMinutes } from 'date-fns';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 import { Image } from 'expo-image';
@@ -109,7 +109,7 @@ export function AppointmentDetailScreen({ navigation, route }: NativeStackScreen
   const { data, profile, refresh } = useAppData();
   const appointments = route.params.source === 'client' ? data.clientAppointments : data.appointments;
   const appointment = appointments.find((item) => item.id === route.params.appointmentId);
-  const [newDate, setNewDate] = React.useState(() => addHours(new Date(), 24));
+  const [newDate, setNewDate] = React.useState(() => appointment ? addDays(appointment.startAt, 1) : addHours(new Date(), 24));
   const [confirmCancel, setConfirmCancel] = React.useState(false);
   const [actionError, setActionError] = React.useState<string | null>(null);
   const [actionLoading, setActionLoading] = React.useState(false);
@@ -145,7 +145,7 @@ export function AppointmentDetailScreen({ navigation, route }: NativeStackScreen
       {actionError ? <Banner message={actionError} tone="danger" /> : null}
       {route.params.source === 'client' && ['pending', 'confirmed'].includes(appointment.status) && editable ? <>
         <SectionHeader title="Solicitar otro horario" subtitle="Tu cita actual se conserva hasta que acepten el cambio." />
-        <DateField date={newDate} label="Nueva fecha" onChange={(date) => setNewDate(setHours(setMinutes(date, newDate.getMinutes()), newDate.getHours()))} />
+        <DateField date={newDate} label="Nueva fecha" maximumDate={addDays(new Date(), 60)} onChange={(date) => setNewDate(setHours(setMinutes(date, newDate.getMinutes()), newDate.getHours()))} />
         <TimeField date={newDate} label="Nueva hora" onChange={(date) => setNewDate(setHours(setMinutes(newDate, date.getMinutes()), date.getHours()))} />
         <PrimaryButton disabled={Boolean(appointment.rescheduleRequest)} label="Solicitar cambio" loading={actionLoading} onPress={() => void requestReschedule()} />
         <PrimaryButton label="Cancelar cita" onPress={() => setConfirmCancel(true)} variant="ghost" />

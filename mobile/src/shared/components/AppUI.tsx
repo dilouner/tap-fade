@@ -255,7 +255,7 @@ export function ShopCard({
   onPress?: () => void;
 }) {
   return (
-    <Pressable accessibilityLabel={`${name}, ${address}`} accessibilityRole={onPress ? 'button' : undefined} onPress={onPress} style={({ pressed }) => [styles.mediaCard, pressed && styles.pressed]}>
+    <Pressable accessibilityLabel={`${name}, ${address}`} accessibilityRole={onPress ? 'button' : undefined} disabled={!onPress} onPress={onPress} style={({ pressed }) => [styles.mediaCard, pressed && styles.pressed]}>
       <Image contentFit="cover" source={image ?? shopImageFallback} style={styles.mediaImage} transition={250} />
       <View style={styles.mediaBody}>
         <Text style={styles.cardTitle}>{name}</Text>
@@ -280,7 +280,7 @@ export function BarberCard({
   specialties: string[];
 }) {
   return (
-    <Pressable accessibilityLabel={`${name}, ${specialties.join(', ') || 'General'}`} accessibilityRole={onPress ? 'button' : undefined} accessibilityState={onPress ? { selected: Boolean(selected) } : undefined} onPress={onPress} style={[styles.rowCard, selected && styles.selectedCard]}>
+    <Pressable accessibilityLabel={`${name}, ${specialties.join(', ') || 'General'}`} accessibilityRole={onPress ? 'button' : undefined} accessibilityState={onPress ? { selected: Boolean(selected) } : undefined} disabled={!onPress} onPress={onPress} style={[styles.rowCard, selected && styles.selectedCard]}>
       <Image contentFit="cover" source={image ?? barberImageFallback} style={styles.avatar} transition={200} />
       <View style={styles.rowText}>
         <Text style={styles.cardTitle}>{name}</Text>
@@ -305,7 +305,7 @@ export function ServiceCard({
   selected?: boolean;
 }) {
   return (
-    <Pressable accessibilityLabel={`${name}, ${duration} minutos, ${price} pesos`} accessibilityRole={onPress ? 'button' : undefined} accessibilityState={onPress ? { selected: Boolean(selected) } : undefined} onPress={onPress} style={[styles.rowCard, selected && styles.selectedCard]}>
+    <Pressable accessibilityLabel={`${name}, ${duration} minutos, ${price} pesos`} accessibilityRole={onPress ? 'button' : undefined} accessibilityState={onPress ? { selected: Boolean(selected) } : undefined} disabled={!onPress} onPress={onPress} style={[styles.rowCard, selected && styles.selectedCard]}>
       <View style={styles.serviceIcon}>
         <Ionicons color={colors.blue} name="cut-outline" size={20} />
       </View>
@@ -336,7 +336,7 @@ export function AppointmentCard({
   status: AppointmentStatus;
 }) {
   return (
-    <Pressable accessibilityLabel={`${service}, ${client}, ${date}, ${statusLabels[status]}`} accessibilityRole={onPress ? 'button' : undefined} onPress={onPress} style={({ pressed }) => [styles.appointmentCard, pressed && styles.pressed]}>
+    <Pressable accessibilityLabel={`${service}, ${client}, ${date}, ${statusLabels[status]}`} accessibilityRole={onPress ? 'button' : undefined} disabled={!onPress} onPress={onPress} style={({ pressed }) => [styles.appointmentCard, pressed && styles.pressed]}>
       <View style={styles.appointmentTop}>
         <View style={styles.rowText}>
           <Text style={styles.cardTitle}>{service}</Text>

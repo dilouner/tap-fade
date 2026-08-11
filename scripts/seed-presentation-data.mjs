@@ -87,7 +87,10 @@ const appointmentSpecs = [
   ['demo-appointment-today-pending', 0, 11, 'pending', 'demo-shop-norte', 'barber-1', 'service-fade'],
   ['demo-appointment-today-confirmed', 0, 14, 'confirmed', 'demo-shop-norte', 'barber-2', 'service-clasico'],
   ['demo-appointment-tomorrow', 1, 10, 'confirmed', 'demo-shop-distrito', 'barber-1', 'service-premium'],
+  ['demo-appointment-norte-tomorrow', 1, 15, 'pending', 'demo-shop-norte', 'barber-1', 'service-barba'],
   ['demo-appointment-day2', 2, 12, 'pending', 'demo-shop-nomada', 'barber-1', 'service-diseno'],
+  ['demo-appointment-norte-day2', 2, 16, 'confirmed', 'demo-shop-norte', 'barber-2', 'service-clasico'],
+  ['demo-appointment-norte-day3', 3, 10, 'pending', 'demo-shop-norte', 'barber-1', 'service-fade'],
   ['demo-appointment-day4', 4, 15, 'confirmed', 'demo-shop-bronce', 'barber-2', 'service-barba'],
   ['demo-appointment-day7', 7, 13, 'pending', 'demo-shop-norte', 'barber-1', 'service-premium'],
 ];
@@ -132,7 +135,7 @@ const summary = { projectId, mode: apply ? 'apply' : 'dry-run', firestoreWrites:
 console.log(JSON.stringify(summary, null, 2));
 if (!apply) process.exit(0);
 
-const backupDir = join(process.cwd(), 'backups');
+const backupDir = join(process.cwd(), 'scripts', 'backups');
 await mkdir(backupDir, { recursive: true });
 const backupPath = join(backupDir, `presentation-seed-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
 await writeFile(backupPath, JSON.stringify({ projectId, createdAt: new Date().toISOString(), documents: [...new Set([...deletes, ...writes.map(([path]) => path)])].map((path) => ({ path, before: encode(existing.get(path) ?? null) })), authUsers: authUsers.filter((item) => item.email?.endsWith('@tapfade.test')).map((item) => ({ uid: item.uid, email: item.email, displayName: item.displayName, disabled: item.disabled })) }, null, 2));
