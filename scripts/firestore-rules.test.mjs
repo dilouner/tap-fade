@@ -43,6 +43,15 @@ test('un cliente no puede elevarse a administrador', async () => {
   await assertFails(updateDoc(doc(db, 'users', 'client-1'), { role: 'admin', roles: ['client', 'admin'] }));
 });
 
+test('favoritos son privados y sólo aceptan negocios activos', async () => {
+  const owner = environment.authenticatedContext('client-1').firestore();
+  const favorite = { shopId: 'shop-active', userId: 'client-1', createdAt: new Date() };
+  await assertSucceeds(setDoc(doc(owner, 'users', 'client-1', 'favorites', 'shop-active'), favorite));
+  await assertFails(setDoc(doc(owner, 'users', 'client-1', 'favorites', 'shop-paused'), { ...favorite, shopId: 'shop-paused' }));
+  const stranger = environment.authenticatedContext('client-2').firestore();
+  await assertFails(getDoc(doc(stranger, 'users', 'client-1', 'favorites', 'shop-active')));
+});
+
 test('un administrador puede suspender y auditar un negocio', async () => {
   const db = environment.authenticatedContext('admin-1').firestore();
   const batch = writeBatch(db);
@@ -120,4 +129,4 @@ test('una cancelación válida cambia estado y libera todos los segmentos', asyn
 
 function profile(uid, roles) { return { createdAt: new Date(), displayName: uid, email: `${uid}@example.com`, phone: null, photoURL: null, role: roles.at(-1), roles, uid, updatedAt: new Date() }; }
 function shop(id, ownerId, status) { return { address: 'Centro', createdAt: new Date(), description: 'Barbería', id, location: null, name: id, ownerId, photoUrl: null, status, timezone: 'America/Chihuahua', updatedAt: new Date() }; }
-function appointmentData(id, clientId) { const startAt = new Date('2026-08-10T16:00:00.000Z'); return { barberId: 'barber-1', barberName: 'Alex', barberShopId: 'shop-active', clientId, clientName: clientId, createdAt: new Date(), durationSnapshot: 30, endAt: new Date(startAt.getTime() + 1_800_000), id, priceSnapshot: 250, rescheduleRequest: null, revision: 1, serviceId: 'service-1', serviceName: 'Corte', slotIds: ['shop-active_barber-1_202608101600', 'shop-active_barber-1_202608101615'], startAt, status: 'pending', updatedAt: new Date() }; }
+function appointmentData(id, clientId) { const startAt = new Date(Date.now() + 48 * 60 * 60 * 1000); startAt.setUTCMinutes(0, 0, 0); const key = (date) => date.toISOString().replace(/[^0-9]/g, '').slice(0, 12); return { barberId: 'barber-1', barberName: 'Alex', barberShopId: 'shop-active', clientId, clientName: clientId, createdAt: new Date(), durationSnapshot: 30, endAt: new Date(startAt.getTime() + 1_800_000), id, priceSnapshot: 250, rescheduleRequest: null, revision: 1, serviceId: 'service-1', serviceName: 'Corte', slotIds: [`shop-active_barber-1_${key(startAt)}`, `shop-active_barber-1_${key(new Date(startAt.getTime() + 900_000))}`], startAt, status: 'pending', updatedAt: new Date() }; }

@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import NetInfo from '@react-native-community/netinfo';
 
 import { listAllAppointments, listBarberAppointments, listClientAppointments, listShopAppointments, subscribeBarberAppointments, subscribeClientAppointments, subscribeShopAppointments } from '../modules/appointments/appointmentRepository';
 import type { Appointment } from '../modules/appointments/types';
@@ -13,6 +14,7 @@ import { listShopServices } from '../modules/services/serviceRepository';
 import type { BarberService } from '../modules/services/types';
 import { listUsers } from '../modules/users/userProfileRepository';
 import type { AppMode, UserProfile } from '../modules/users/types';
+import { subscribeFavoriteShopIds } from '../modules/favorites/favoriteRepository';
 
 export type AppData = {
   activeBarber: Barber | null;
@@ -21,6 +23,7 @@ export type AppData = {
   availability: AvailabilityBlock[];
   barbers: Barber[];
   clientAppointments: Appointment[];
+  favoriteShopIds: string[];
   notifications: AppNotification[];
   services: BarberService[];
   shops: BarberShop[];
@@ -31,6 +34,7 @@ type AppContextValue = {
   data: AppData;
   error: string | null;
   loading: boolean;
+  online: boolean;
   mode: AppMode;
   profile: UserProfile | null;
   refresh: () => Promise<void>;
@@ -45,6 +49,7 @@ const emptyData: AppData = {
   availability: [],
   barbers: [],
   clientAppointments: [],
+  favoriteShopIds: [],
   notifications: [],
   services: [],
   shops: [],
@@ -58,6 +63,9 @@ export function AppDataProvider({ children, profile }: { children: ReactNode; pr
   const [data, setData] = useState<AppData>(emptyData);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [online, setOnline] = useState(true);
+
+  useEffect(() => NetInfo.addEventListener((state) => setOnline(state.isConnected !== false)), []);
 
   const availableModes = useMemo(() => profile?.roles ?? ['client'], [profile?.roles]);
   const mode: AppMode = availableModes.includes(selectedMode) ? selectedMode : 'client';
@@ -118,7 +126,7 @@ export function AppDataProvider({ children, profile }: { children: ReactNode; pr
       else if (activeShop && mode === 'barber' && activeBarber) appointments = await safely(listBarberAppointments(activeShop.id, activeBarber.id), [], 'Agenda');
       else if (activeShop) appointments = await safely(listShopAppointments(activeShop.id), [], 'Agenda');
 
-      setData({ activeBarber, activeShop, appointments, availability, barbers, clientAppointments, notifications, services, shops, users });
+      setData((current) => ({ ...current, activeBarber, activeShop, appointments, availability, barbers, clientAppointments, notifications, services, shops, users }));
       if (failures.length) setError(failures[0]);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'No fue posible actualizar TapFade.');
@@ -141,7 +149,10 @@ export function AppDataProvider({ children, profile }: { children: ReactNode; pr
     const stopNotifications = subscribeNotifications(profile.uid, (notifications) => {
       setData((current) => ({ ...current, notifications }));
     }, report);
-    return () => { stopAppointments(); stopNotifications(); };
+    const stopFavorites = subscribeFavoriteShopIds(profile.uid, (favoriteShopIds) => {
+      setData((current) => ({ ...current, favoriteShopIds }));
+    }, report);
+    return () => { stopAppointments(); stopNotifications(); stopFavorites(); };
   }, [profile]);
 
   useEffect(() => {
@@ -158,7 +169,7 @@ export function AppDataProvider({ children, profile }: { children: ReactNode; pr
   }, [data.clientAppointments, profile]);
 
   const unreadNotifications = useMemo(() => data.notifications.filter((item) => !item.readAt).length, [data.notifications]);
-  const value = useMemo(() => ({ data, error, loading, mode, profile, refresh, setMode, unreadNotifications }), [data, error, loading, mode, profile, refresh, setMode, unreadNotifications]);
+  const value = useMemo(() => ({ data, error, loading, mode, online, profile, refresh, setMode, unreadNotifications }), [data, error, loading, mode, online, profile, refresh, setMode, unreadNotifications]);
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }
 

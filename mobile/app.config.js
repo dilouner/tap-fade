@@ -25,7 +25,7 @@ module.exports = () => {
     },
     web: { favicon: './assets/favicon.png' },
     plugins: [
-      '@react-native-google-signin/google-signin', 'expo-asset', 'expo-font', '@react-native-community/datetimepicker',
+      '@react-native-google-signin/google-signin', 'expo-asset', 'expo-font', 'expo-image', '@react-native-community/datetimepicker',
       ['expo-location', { locationWhenInUsePermission: 'TapFade usa tu ubicación solo mientras exploras para ordenar barberías cercanas.' }],
       ['expo-notifications', { defaultChannel: 'appointments' }],
     ],

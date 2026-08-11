@@ -12,6 +12,7 @@ export type BarberShop = {
   description: string;
   address: string;
   photoUrl: string | null;
+  coverKey: string | null;
   location: ShopLocation | null;
   timezone: string;
   ownerId: string;
@@ -26,6 +27,7 @@ export type Barber = {
   userId: string | null;
   displayName: string;
   photoUrl: string | null;
+  avatarKey: string | null;
   specialties: string[];
   serviceIds: string[];
   active: boolean;
@@ -38,6 +40,7 @@ export type BarberShopInput = {
   description: string;
   address: string;
   photoUrl?: string | null;
+  coverKey?: string | null;
   location?: ShopLocation | null;
   timezone?: string;
   ownerId: string;
@@ -47,6 +50,7 @@ export type BarberInput = {
   barberShopId: string;
   displayName: string;
   photoUrl?: string | null;
+  avatarKey?: string | null;
   specialties?: string[];
   serviceIds?: string[];
   userId?: string | null;

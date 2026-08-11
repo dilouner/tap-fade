@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps, ReactNode } from 'react';
+import { Image, type ImageSource } from 'expo-image';
 import {
-  Image,
   ActivityIndicator,
-  type ImageSourcePropType,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -69,9 +69,11 @@ type ScreenProps = {
   scroll?: boolean;
   title: string;
   eyebrow?: string;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 };
 
-export function Screen({ children, dark, eyebrow, footer, scroll = true, title }: ScreenProps) {
+export function Screen({ children, dark, eyebrow, footer, onRefresh, refreshing = false, scroll = true, title }: ScreenProps) {
   const content = (
     <>
       <View style={styles.screenHeader}>
@@ -89,7 +91,7 @@ export function Screen({ children, dark, eyebrow, footer, scroll = true, title }
 
   return (
     <SafeAreaView edges={['bottom']} style={[styles.safe, dark && styles.darkScreen]}>
-      <ScrollView contentContainerStyle={[styles.screen, dark && styles.darkScreen]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.screen, dark && styles.darkScreen]} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" refreshControl={onRefresh ? <RefreshControl onRefresh={onRefresh} refreshing={refreshing} tintColor={colors.blue} /> : undefined} showsVerticalScrollIndicator={false}>
         {content}
       </ScrollView>
     </SafeAreaView>
@@ -244,18 +246,21 @@ export function ShopCard({
   image,
   name,
   onPress,
+  meta,
 }: {
   address: string;
-  image?: ImageSourcePropType;
+  image?: ImageSource;
+  meta?: string;
   name: string;
   onPress?: () => void;
 }) {
   return (
     <Pressable accessibilityLabel={`${name}, ${address}`} accessibilityRole={onPress ? 'button' : undefined} onPress={onPress} style={({ pressed }) => [styles.mediaCard, pressed && styles.pressed]}>
-      <Image resizeMode="cover" source={image ?? shopImageFallback} style={styles.mediaImage} />
+      <Image contentFit="cover" source={image ?? shopImageFallback} style={styles.mediaImage} transition={250} />
       <View style={styles.mediaBody}>
         <Text style={styles.cardTitle}>{name}</Text>
         <Text numberOfLines={1} style={styles.smallMuted}>{address}</Text>
+        {meta ? <Text numberOfLines={1} style={styles.mediaMeta}>{meta}</Text> : null}
       </View>
     </Pressable>
   );
@@ -268,7 +273,7 @@ export function BarberCard({
   selected,
   specialties,
 }: {
-  image?: ImageSourcePropType;
+  image?: ImageSource;
   name: string;
   onPress?: () => void;
   selected?: boolean;
@@ -276,7 +281,7 @@ export function BarberCard({
 }) {
   return (
     <Pressable accessibilityLabel={`${name}, ${specialties.join(', ') || 'General'}`} accessibilityRole={onPress ? 'button' : undefined} accessibilityState={onPress ? { selected: Boolean(selected) } : undefined} onPress={onPress} style={[styles.rowCard, selected && styles.selectedCard]}>
-      <Image resizeMode="cover" source={image ?? barberImageFallback} style={styles.avatar} />
+      <Image contentFit="cover" source={image ?? barberImageFallback} style={styles.avatar} transition={200} />
       <View style={styles.rowText}>
         <Text style={styles.cardTitle}>{name}</Text>
         <Text numberOfLines={1} style={styles.smallMuted}>{specialties.join(', ') || 'General'}</Text>
@@ -366,7 +371,7 @@ const styles = StyleSheet.create({
   appointmentCard: {
     backgroundColor: colors.surface,
     borderColor: colors.coolGrey,
-    borderRadius: 8,
+    borderRadius: 18,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
@@ -378,7 +383,7 @@ const styles = StyleSheet.create({
   },
   avatar: {
     backgroundColor: colors.smoke,
-    borderRadius: 8,
+    borderRadius: 18,
     height: 56,
     width: 56,
   },
@@ -400,7 +405,7 @@ const styles = StyleSheet.create({
   emptyIcon: {
     alignItems: 'center',
     backgroundColor: colors.blueGlow,
-    borderRadius: 8,
+    borderRadius: 16,
     height: 48,
     justifyContent: 'center',
     width: 48,
@@ -456,13 +461,13 @@ const styles = StyleSheet.create({
   mediaCard: {
     backgroundColor: colors.surface,
     borderColor: colors.coolGrey,
-    borderRadius: 8,
+    borderRadius: 20,
     borderWidth: 1,
     overflow: 'hidden',
   },
   mediaImage: {
     backgroundColor: colors.graphite,
-    height: 132,
+    height: 184,
     width: '100%',
   },
   pill: {
@@ -515,6 +520,7 @@ const styles = StyleSheet.create({
   screenHeader: {
     gap: spacing.xs,
   },
+  mediaMeta: { color: colors.blue, fontFamily: typography.bodyBold, fontSize: 12, marginTop: spacing.xs },
   safe: { backgroundColor: colors.smoke, flex: 1 },
   screenFlex: { flex: 1 },
   sectionHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between' },
@@ -539,7 +545,7 @@ const styles = StyleSheet.create({
   },
   segmented: {
     backgroundColor: colors.coolGrey,
-    borderRadius: 8,
+    borderRadius: 16,
     flexDirection: 'row',
     gap: spacing.xs,
     padding: spacing.xs,
@@ -551,7 +557,7 @@ const styles = StyleSheet.create({
   serviceIcon: {
     alignItems: 'center',
     backgroundColor: colors.blueGlow,
-    borderRadius: 8,
+    borderRadius: 16,
     height: 44,
     justifyContent: 'center',
     width: 44,
@@ -565,7 +571,7 @@ const styles = StyleSheet.create({
   statCard: {
     backgroundColor: colors.surface,
     borderColor: colors.coolGrey,
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
     flex: 1,
     gap: spacing.xs,

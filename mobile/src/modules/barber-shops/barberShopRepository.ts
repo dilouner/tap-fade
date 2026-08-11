@@ -40,6 +40,7 @@ function normalizeBarberShop(record: BarberShopRecord): BarberShop {
   return {
     ...record,
     location: record.location ?? null,
+    coverKey: record.coverKey ?? null,
     status: record.status === 'inactive' ? 'paused' : record.status,
     timezone: record.timezone ?? 'America/Chihuahua',
     createdAt: normalizeFirestoreDate(record.createdAt),
@@ -51,6 +52,7 @@ function normalizeBarber(record: BarberRecord): Barber {
   return {
     ...record,
     serviceIds: record.serviceIds ?? [],
+    avatarKey: record.avatarKey ?? null,
     createdAt: normalizeFirestoreDate(record.createdAt),
     updatedAt: normalizeFirestoreDate(record.updatedAt),
   };

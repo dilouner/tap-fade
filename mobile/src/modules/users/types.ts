@@ -6,6 +6,7 @@ export type UserProfile = {
   email: string;
   phone: string | null;
   photoURL: string | null;
+  avatarKey?: string | null;
   roles: UserRole[];
   ownerShopId?: string | null;
   barberShopId?: string | null;

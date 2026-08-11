@@ -57,6 +57,14 @@ service cloud.firestore {
         allow delete: if own(userId);
         allow create: if validNotification(notificationId, userId);
       }
+      match /favorites/{shopId} {
+        allow read: if own(userId);
+        allow create: if own(userId) && request.resource.data.keys().hasOnly(['shopId', 'userId', 'createdAt'])
+          && request.resource.data.shopId == shopId && request.resource.data.userId == userId
+          && request.resource.data.createdAt is timestamp && activeShop(shopId);
+        allow update: if false;
+        allow delete: if own(userId);
+      }
     }
 
     function ownerOnboarding(userId) {
@@ -103,7 +111,9 @@ service cloud.firestore {
       match /barbers/{barberId} {
         allow read: if activeShop(shopId) || shopOwner(shopId) || activeMember(shopId) || admin();
         allow create: if (admin() || getAfter(shopPath(shopId)).data.ownerId == request.auth.uid) && validBarber(request.resource.data, shopId, barberId);
-        allow update: if validBarber(request.resource.data, shopId, barberId) && (
+        allow update: if validBarber(request.resource.data, shopId, barberId)
+          && ((!('avatarKey' in resource.data) && !('avatarKey' in request.resource.data))
+            || (('avatarKey' in resource.data) && request.resource.data.avatarKey == resource.data.avatarKey)) && (
           shopOwner(shopId) || admin()
           || (own(request.resource.data.userId) && getAfter(memberPath(shopId, request.auth.uid)).data.barberId == barberId)
         );
@@ -138,6 +148,7 @@ service cloud.firestore {
         && data.address is string && data.address.size() >= 4 && data.address.size() <= 300
         && data.description is string && data.description.size() <= 1000
         && data.ownerId is string && data.timezone is string
+        && (!('coverKey' in data) || data.coverKey == null || data.coverKey in ['norte', 'distrito', 'nomada', 'bronce'])
         && data.status in ['active', 'paused', 'suspended'];
     }
     function validService(data, shopId, id) {
@@ -148,6 +159,7 @@ service cloud.firestore {
     function validBarber(data, shopId, id) {
       return data.id == id && data.barberShopId == shopId && data.displayName is string
         && data.displayName.size() >= 2 && data.displayName.size() <= 100 && data.active is bool
+        && (!('avatarKey' in data) || data.avatarKey == null || data.avatarKey in ['mateo', 'alex', 'diego', 'valeria', 'juan', 'emiliano', 'bruno', 'sofia'])
         && data.serviceIds is list && data.serviceIds.size() <= 50 && data.specialties is list && data.specialties.size() <= 20;
     }
     function validAvailability(data, shopId, id) {

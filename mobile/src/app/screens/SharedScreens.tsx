@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { addHours, setHours, setMinutes } from 'date-fns';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import React from 'react';
+import { Image } from 'expo-image';
 
 import { useAppData } from '../AppContext';
 import type { RootStackParamList } from '../navigationTypes';
@@ -17,6 +18,7 @@ import { ConfirmationDialog, DateField, Field, SelectField, TimeField } from '..
 import { PrimaryButton } from '../../shared/components/PrimaryButton';
 import { colors, spacing, typography } from '../../shared/theme';
 import { AppShell } from '../../shell/AppShell';
+import { resolveProfileImage } from '../../shared/assets/demoAssets';
 
 export type AuthActions = {
   deleteAccount: (password?: string) => Promise<void>;
@@ -55,7 +57,7 @@ export function ProfileScreen({ actions, onNavigate }: { actions: AuthActions; o
   return (
     <Screen eyebrow="Tu cuenta" title="Perfil y espacios">
       <View style={styles.profileCard}>
-        <View style={styles.avatar}><Text style={styles.avatarText}>{(profile.displayName || profile.email).slice(0, 2).toUpperCase()}</Text></View>
+        <Image accessibilityLabel={`Avatar de ${profile.displayName}`} contentFit="cover" source={resolveProfileImage(profile)} style={styles.avatar} transition={200} />
         <View style={styles.flex}><Text style={styles.cardTitle}>{profile.displayName || 'Usuario TapFade'}</Text><Text style={styles.muted}>{profile.email}</Text></View>
       </View>
       <SelectField<AppMode> label="Cambiar espacio" onChange={setMode} options={profile.roles.map((role) => ({ label: roleLabel(role), value: role }))} value={mode} />
@@ -77,7 +79,7 @@ export function ProfileEditScreen({ navigation }: NativeStackScreenProps<RootSta
   const { profile, refresh } = useAppData();
   const [name, setName] = React.useState(profile?.displayName ?? '');
   const [phone, setPhone] = React.useState(profile?.phone ?? '');
-  if (!profile) return null;
+  if (!profile) return <Screen eyebrow="Cuenta" title="Inicia sesión"><EmptyState icon="person-outline" message="Vuelve al escaparate e inicia sesión para editar tu perfil." title="Perfil no disponible" /></Screen>;
   async function save() {
     if (name.trim().length < 2) return;
     await updateOwnProfile(profile!.uid, { displayName: name, phone: phone || null });
@@ -89,7 +91,7 @@ export function ProfileEditScreen({ navigation }: NativeStackScreenProps<RootSta
 
 export function NotificationsScreen() {
   const { data, profile, refresh } = useAppData();
-  if (!profile) return null;
+  if (!profile) return <Screen eyebrow="Actividad" title="Notificaciones"><EmptyState icon="notifications-outline" message="Inicia sesión para consultar tu bandeja." title="Bandeja no disponible" /></Screen>;
   return (
     <Screen eyebrow="Actividad" title="Notificaciones">
       <SectionHeader action={data.notifications.some((item) => !item.readAt) ? <Pressable onPress={() => void markAllNotificationsRead(data.notifications).then(refresh)}><Text style={styles.link}>Marcar todas</Text></Pressable> : null} subtitle={`${data.notifications.filter((item) => !item.readAt).length} sin leer`} title="Tu bandeja" />
