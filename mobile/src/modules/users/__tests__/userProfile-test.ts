@@ -22,6 +22,7 @@ describe('userProfile', () => {
       phone: null,
       photoURL: 'https://example.com/photo.png',
       role: 'client',
+      roles: ['client'],
       uid: 'user-1',
       updatedAt: now,
     });
@@ -35,6 +36,7 @@ describe('userProfile', () => {
       phone: null,
       photoURL: null,
       role: 'owner',
+      roles: ['client', 'owner'],
       uid: 'user-1',
       updatedAt: new Date('2026-01-01T00:00:00.000Z'),
     };

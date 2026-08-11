@@ -35,6 +35,7 @@ export function InputField({
         <Text style={styles.iconText}>{icon}</Text>
       </View>
       <TextInput
+        accessibilityLabel={placeholder}
         autoCapitalize={autoCapitalize}
         autoComplete={autoComplete}
         inputMode={inputMode}
@@ -46,7 +47,7 @@ export function InputField({
         value={value}
       />
       {showToggle ? (
-        <Pressable hitSlop={8} onPress={onTogglePress} style={styles.toggle}>
+        <Pressable accessibilityLabel={isSecureVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'} accessibilityRole="button" hitSlop={8} onPress={onTogglePress} style={styles.toggle}>
           <Text style={styles.toggleText}>{isSecureVisible ? 'Ocultar' : 'Ver'}</Text>
         </Pressable>
       ) : null}

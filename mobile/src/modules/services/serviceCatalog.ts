@@ -25,6 +25,7 @@ export function isValidService(input: BarberServiceInput) {
     input.price >= 0 &&
     Number.isInteger(input.durationMinutes) &&
     input.durationMinutes >= SLOT_MINUTES &&
+    input.durationMinutes <= 180 &&
     input.durationMinutes % SLOT_MINUTES === 0
   );
 }

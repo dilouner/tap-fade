@@ -15,7 +15,10 @@ export function createBarberShop(input: BarberShopInput, id = `shop-${Date.now()
     name: input.name.trim(),
     ownerId: input.ownerId,
     photoUrl: input.photoUrl?.trim() || null,
+    coverKey: input.coverKey ?? null,
+    location: input.location ?? null,
     status: 'active',
+    timezone: input.timezone ?? 'America/Chihuahua',
     updatedAt: createdAt,
   };
 }
@@ -30,6 +33,8 @@ export function createBarber(input: BarberInput, id = `barber-${Date.now()}`): B
     displayName: input.displayName.trim(),
     id,
     photoUrl: input.photoUrl?.trim() || null,
+    avatarKey: input.avatarKey ?? null,
+    serviceIds: input.serviceIds ?? [],
     specialties: input.specialties?.map((value) => value.trim()).filter(Boolean) ?? [],
     updatedAt: createdAt,
     userId: input.userId ?? null,

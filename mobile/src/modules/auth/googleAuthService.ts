@@ -1,5 +1,5 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import { GoogleAuthProvider, signInWithCredential, signOut, type Auth, type UserCredential } from 'firebase/auth';
+import { GoogleAuthProvider, reauthenticateWithCredential, signInWithCredential, signOut, type Auth, type User, type UserCredential } from 'firebase/auth';
 
 import { getFirebaseAuth } from '../../shared/firebase/config';
 
@@ -47,6 +47,15 @@ export async function signInWithGoogle(auth: Auth = getFirebaseAuth()): Promise<
 
   const credential = GoogleAuthProvider.credential(idToken);
   return signInWithCredential(auth, credential);
+}
+
+export async function reauthenticateWithGoogle(user: User): Promise<void> {
+  configureGoogleSignIn();
+  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+  const response = await GoogleSignin.signIn();
+  const idToken = response.data?.idToken;
+  if (!idToken) throw new Error('Google no devolvió una credencial válida.');
+  await reauthenticateWithCredential(user, GoogleAuthProvider.credential(idToken));
 }
 
 export async function signOutFromGoogle(auth: Auth = getFirebaseAuth()): Promise<void> {

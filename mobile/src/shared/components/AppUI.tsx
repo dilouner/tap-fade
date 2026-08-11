@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps, ReactNode } from 'react';
+import { Image, type ImageSource } from 'expo-image';
 import {
-  Image,
-  type ImageSourcePropType,
+  ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,9 +13,52 @@ import {
 
 import type { AppointmentStatus } from '../../modules/appointments/types';
 import { colors, spacing, typography } from '../theme';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export const shopImageFallback = require('../../../assets/brand-digital-applications.png');
 export const barberImageFallback = require('../../../assets/logo-symbol-color.png');
+
+export function LoadingState({ label = 'Actualizando TapFade…' }: { label?: string }) {
+  return (
+    <View style={styles.loadingState}>
+      <ActivityIndicator color={colors.blue} size="large" />
+      <Text style={styles.smallMuted}>{label}</Text>
+    </View>
+  );
+}
+
+export function Banner({ message, tone = 'info' }: { message: string; tone?: 'danger' | 'info' | 'success' }) {
+  return (
+    <View style={[styles.banner, tone === 'danger' && styles.bannerDanger, tone === 'success' && styles.bannerSuccess]}>
+      <Ionicons color={tone === 'danger' ? colors.danger : tone === 'success' ? colors.success : colors.blue} name={tone === 'danger' ? 'alert-circle-outline' : 'information-circle-outline'} size={20} />
+      <Text style={styles.bannerText}>{message}</Text>
+    </View>
+  );
+}
+
+export function PremiumHero({ action, eyebrow, subtitle, title }: { action?: ReactNode; eyebrow: string; subtitle: string; title: string }) {
+  return (
+    <View style={styles.hero}>
+      <View pointerEvents="none" style={styles.heroGlow} />
+      <Text style={styles.heroEyebrow}>{eyebrow}</Text>
+      <Text style={styles.heroTitle}>{title}</Text>
+      <Text style={styles.heroSubtitle}>{subtitle}</Text>
+      {action}
+    </View>
+  );
+}
+
+export function SectionHeader({ action, subtitle, title }: { action?: ReactNode; subtitle?: string; title: string }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <View style={styles.rowText}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        {subtitle ? <Text style={styles.smallMuted}>{subtitle}</Text> : null}
+      </View>
+      {action}
+    </View>
+  );
+}
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -25,9 +69,11 @@ type ScreenProps = {
   scroll?: boolean;
   title: string;
   eyebrow?: string;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 };
 
-export function Screen({ children, dark, eyebrow, footer, scroll = true, title }: ScreenProps) {
+export function Screen({ children, dark, eyebrow, footer, onRefresh, refreshing = false, scroll = true, title }: ScreenProps) {
   const content = (
     <>
       <View style={styles.screenHeader}>
@@ -40,13 +86,15 @@ export function Screen({ children, dark, eyebrow, footer, scroll = true, title }
   );
 
   if (!scroll) {
-    return <View style={[styles.screen, dark && styles.darkScreen]}>{content}</View>;
+    return <SafeAreaView edges={['bottom']} style={[styles.screen, styles.screenFlex, dark && styles.darkScreen]}>{content}</SafeAreaView>;
   }
 
   return (
-    <ScrollView contentContainerStyle={[styles.screen, dark && styles.darkScreen]} showsVerticalScrollIndicator={false}>
-      {content}
-    </ScrollView>
+    <SafeAreaView edges={['bottom']} style={[styles.safe, dark && styles.darkScreen]}>
+      <ScrollView contentContainerStyle={[styles.screen, dark && styles.darkScreen]} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" refreshControl={onRefresh ? <RefreshControl onRefresh={onRefresh} refreshing={refreshing} tintColor={colors.blue} /> : undefined} showsVerticalScrollIndicator={false}>
+        {content}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -86,6 +134,7 @@ export function IconButton({
   return (
     <Pressable
       accessibilityLabel={label}
+      accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
         styles.iconButton,
@@ -121,7 +170,7 @@ export function EmptyState({ action, icon = 'calendar-outline', message, title }
   );
 }
 
-export function StatusPill({ status }: { status: AppointmentStatus | 'active' | 'inactive' }) {
+export function StatusPill({ status }: { status: AppointmentStatus | 'active' | 'inactive' | 'paused' | 'suspended' }) {
   const tone = status === 'confirmed' || status === 'completed' || status === 'active'
     ? styles.pillSuccess
     : status === 'pending'
@@ -130,10 +179,15 @@ export function StatusPill({ status }: { status: AppointmentStatus | 'active' | 
 
   return (
     <View style={[styles.pill, tone]}>
-      <Text style={styles.pillText}>{status}</Text>
+      <Text style={styles.pillText}>{statusLabels[status] ?? status}</Text>
     </View>
   );
 }
+
+const statusLabels: Record<string, string> = {
+  active: 'Activo', cancelled: 'Cancelada', completed: 'Completada', confirmed: 'Confirmada', inactive: 'Inactivo',
+  paused: 'Pausado', pending: 'Pendiente', rejected: 'Rechazada', suspended: 'Suspendido',
+};
 
 export function SegmentedControl<T extends string>({
   onChange,
@@ -150,6 +204,8 @@ export function SegmentedControl<T extends string>({
         const active = option.value === value;
         return (
           <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected: active }}
             key={option.value}
             onPress={() => onChange(option.value)}
             style={[styles.segment, active && styles.segmentActive]}
@@ -176,7 +232,7 @@ export function TimeSlotGrid({
       {slots.map((slot) => {
         const active = slot === selected;
         return (
-          <Pressable key={slot} onPress={() => onSelect(slot)} style={[styles.timeSlot, active && styles.timeSlotActive]}>
+          <Pressable accessibilityLabel={`Horario ${slot}`} accessibilityRole="radio" accessibilityState={{ selected: active }} key={slot} onPress={() => onSelect(slot)} style={[styles.timeSlot, active && styles.timeSlotActive]}>
             <Text style={[styles.timeText, active && styles.timeTextActive]}>{slot}</Text>
           </Pressable>
         );
@@ -190,18 +246,21 @@ export function ShopCard({
   image,
   name,
   onPress,
+  meta,
 }: {
   address: string;
-  image?: ImageSourcePropType;
+  image?: ImageSource;
+  meta?: string;
   name: string;
   onPress?: () => void;
 }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.mediaCard, pressed && styles.pressed]}>
-      <Image resizeMode="cover" source={image ?? shopImageFallback} style={styles.mediaImage} />
+    <Pressable accessibilityLabel={`${name}, ${address}`} accessibilityRole={onPress ? 'button' : undefined} disabled={!onPress} onPress={onPress} style={({ pressed }) => [styles.mediaCard, pressed && styles.pressed]}>
+      <Image contentFit="cover" source={image ?? shopImageFallback} style={styles.mediaImage} transition={250} />
       <View style={styles.mediaBody}>
         <Text style={styles.cardTitle}>{name}</Text>
         <Text numberOfLines={1} style={styles.smallMuted}>{address}</Text>
+        {meta ? <Text numberOfLines={1} style={styles.mediaMeta}>{meta}</Text> : null}
       </View>
     </Pressable>
   );
@@ -214,15 +273,15 @@ export function BarberCard({
   selected,
   specialties,
 }: {
-  image?: ImageSourcePropType;
+  image?: ImageSource;
   name: string;
   onPress?: () => void;
   selected?: boolean;
   specialties: string[];
 }) {
   return (
-    <Pressable onPress={onPress} style={[styles.rowCard, selected && styles.selectedCard]}>
-      <Image resizeMode="cover" source={image ?? barberImageFallback} style={styles.avatar} />
+    <Pressable accessibilityLabel={`${name}, ${specialties.join(', ') || 'General'}`} accessibilityRole={onPress ? 'button' : undefined} accessibilityState={onPress ? { selected: Boolean(selected) } : undefined} disabled={!onPress} onPress={onPress} style={[styles.rowCard, selected && styles.selectedCard]}>
+      <Image contentFit="cover" source={image ?? barberImageFallback} style={styles.avatar} transition={200} />
       <View style={styles.rowText}>
         <Text style={styles.cardTitle}>{name}</Text>
         <Text numberOfLines={1} style={styles.smallMuted}>{specialties.join(', ') || 'General'}</Text>
@@ -246,7 +305,7 @@ export function ServiceCard({
   selected?: boolean;
 }) {
   return (
-    <Pressable onPress={onPress} style={[styles.rowCard, selected && styles.selectedCard]}>
+    <Pressable accessibilityLabel={`${name}, ${duration} minutos, ${price} pesos`} accessibilityRole={onPress ? 'button' : undefined} accessibilityState={onPress ? { selected: Boolean(selected) } : undefined} disabled={!onPress} onPress={onPress} style={[styles.rowCard, selected && styles.selectedCard]}>
       <View style={styles.serviceIcon}>
         <Ionicons color={colors.blue} name="cut-outline" size={20} />
       </View>
@@ -277,7 +336,7 @@ export function AppointmentCard({
   status: AppointmentStatus;
 }) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.appointmentCard, pressed && styles.pressed]}>
+    <Pressable accessibilityLabel={`${service}, ${client}, ${date}, ${statusLabels[status]}`} accessibilityRole={onPress ? 'button' : undefined} disabled={!onPress} onPress={onPress} style={({ pressed }) => [styles.appointmentCard, pressed && styles.pressed]}>
       <View style={styles.appointmentTop}>
         <View style={styles.rowText}>
           <Text style={styles.cardTitle}>{service}</Text>
@@ -300,6 +359,10 @@ export function AppointmentCard({
 }
 
 const styles = StyleSheet.create({
+  banner: { alignItems: 'center', backgroundColor: colors.blueGlow, borderRadius: 16, flexDirection: 'row', gap: spacing.sm, padding: spacing.md },
+  bannerDanger: { backgroundColor: '#FEE4E2' },
+  bannerSuccess: { backgroundColor: '#D9F8EA' },
+  bannerText: { color: colors.steel, flex: 1, fontFamily: typography.bodyBold, fontSize: 13, lineHeight: 18 },
   actionRow: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -308,7 +371,7 @@ const styles = StyleSheet.create({
   appointmentCard: {
     backgroundColor: colors.surface,
     borderColor: colors.coolGrey,
-    borderRadius: 8,
+    borderRadius: 18,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
@@ -320,7 +383,7 @@ const styles = StyleSheet.create({
   },
   avatar: {
     backgroundColor: colors.smoke,
-    borderRadius: 8,
+    borderRadius: 18,
     height: 56,
     width: 56,
   },
@@ -342,7 +405,7 @@ const styles = StyleSheet.create({
   emptyIcon: {
     alignItems: 'center',
     backgroundColor: colors.blueGlow,
-    borderRadius: 8,
+    borderRadius: 16,
     height: 48,
     justifyContent: 'center',
     width: 48,
@@ -356,6 +419,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.lg,
   },
+  hero: { backgroundColor: colors.ink, borderRadius: 24, gap: spacing.md, overflow: 'hidden', padding: spacing.xl },
+  heroEyebrow: { color: colors.mint, fontFamily: typography.bodyBlack, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase' },
+  heroGlow: { backgroundColor: colors.blue, borderRadius: 160, height: 220, opacity: 0.32, position: 'absolute', right: -100, top: -110, width: 220 },
+  heroSubtitle: { color: colors.coolGrey, fontFamily: typography.body, fontSize: 15, lineHeight: 22 },
+  heroTitle: { color: colors.surface, fontFamily: typography.display, fontSize: 30, lineHeight: 36, maxWidth: '85%' },
   eyebrow: {
     color: colors.blue,
     fontFamily: typography.bodyBlack,
@@ -385,6 +453,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
   },
+  loadingState: { alignItems: 'center', flex: 1, gap: spacing.md, justifyContent: 'center', minHeight: 240 },
   mediaBody: {
     gap: spacing.xs,
     padding: spacing.md,
@@ -392,13 +461,13 @@ const styles = StyleSheet.create({
   mediaCard: {
     backgroundColor: colors.surface,
     borderColor: colors.coolGrey,
-    borderRadius: 8,
+    borderRadius: 20,
     borderWidth: 1,
     overflow: 'hidden',
   },
   mediaImage: {
     backgroundColor: colors.graphite,
-    height: 132,
+    height: 184,
     width: '100%',
   },
   pill: {
@@ -451,6 +520,11 @@ const styles = StyleSheet.create({
   screenHeader: {
     gap: spacing.xs,
   },
+  mediaMeta: { color: colors.blue, fontFamily: typography.bodyBold, fontSize: 12, marginTop: spacing.xs },
+  safe: { backgroundColor: colors.smoke, flex: 1 },
+  screenFlex: { flex: 1 },
+  sectionHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between' },
+  sectionTitle: { color: colors.graphite, fontFamily: typography.displayBold, fontSize: 20 },
   segment: {
     alignItems: 'center',
     borderRadius: 7,
@@ -471,7 +545,7 @@ const styles = StyleSheet.create({
   },
   segmented: {
     backgroundColor: colors.coolGrey,
-    borderRadius: 8,
+    borderRadius: 16,
     flexDirection: 'row',
     gap: spacing.xs,
     padding: spacing.xs,
@@ -483,7 +557,7 @@ const styles = StyleSheet.create({
   serviceIcon: {
     alignItems: 'center',
     backgroundColor: colors.blueGlow,
-    borderRadius: 8,
+    borderRadius: 16,
     height: 44,
     justifyContent: 'center',
     width: 44,
@@ -497,7 +571,7 @@ const styles = StyleSheet.create({
   statCard: {
     backgroundColor: colors.surface,
     borderColor: colors.coolGrey,
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
     flex: 1,
     gap: spacing.xs,

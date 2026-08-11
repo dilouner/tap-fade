@@ -55,7 +55,7 @@ describe('barberShopRepository admin operations', () => {
     const shops = await listAllBarberShops({} as never);
 
     expect(mockCollection).toHaveBeenCalledWith({}, 'barberShops');
-    expect(shops[0].status).toBe('inactive');
+    expect(shops[0].status).toBe('paused');
   });
 
   it('updates barber shop status', async () => {

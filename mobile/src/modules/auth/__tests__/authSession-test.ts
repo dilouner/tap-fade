@@ -10,7 +10,8 @@ const profile: UserProfile = {
   email: 'daniel@example.com',
   phone: null,
   photoURL: null,
-  role: 'client',
+      role: 'client',
+      roles: ['client'],
   uid: 'user-1',
   updatedAt: new Date('2026-07-06T12:00:00.000Z'),
 };
